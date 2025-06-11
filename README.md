@@ -11,6 +11,7 @@ This repository contains alternatives for the MSX DOS 1 and 2 disk ROM's.
 
 RAM loadable DOS, the kernel functions are compatible with MSX DOS 1.  
 This DOS version can be loaded from MSX-DOS (diskette) or from BASIC (tape) and includes a driver for either the JIO, SODA or BEER IDE interface.  
+[![CXDOS 1 JIO](cxdos1/pictures/cxdos_1_jio_small.png)](cxdos1/pictures/cxdos_1_jio.png)
   
 **Enhancements**  
 Large disk support (FAT12 / FAT16) with up to 8 partitions and faster execution of DOS functions.
@@ -31,10 +32,10 @@ Large disk support (FAT12 / FAT16) with up to 8 partitions and faster execution 
 
 ## CXDOS 2
 
-**Under construction**
+**Under construction**  
 DOS for MSX1 and newer machines with limited ROM or RAM resources, the kernel functions are compatible with MSX-DOS 2.
 A demo version is built that will run on a MSX1 with 32K disk ROM and 64K system RAM.
 
 ## License
-The license terms applies to all material, with the exception of code that is based on existing work by others that is shared publicly and re-used widely without mentioning specific license terms or restrictions. The origins of these parts are mentioned in the source code and it's copyright is respected when applicable.
+The license terms apply to all material, with the exception of code that is based on existing work by others that is shared publicly and re-used widely without mentioning specific license terms or restrictions. The origins of these parts are mentioned in the source code and it's copyright is respected when applicable.
 
