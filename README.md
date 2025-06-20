@@ -1,8 +1,6 @@
 ﻿# cxdos
 msx compact extended dos
 
-**UNDER CONSTRUCTION**
-
 ## Introduction
 
 This repository contains alternatives for the MSX DOS 1 and 2 disk ROM's.
@@ -29,6 +27,9 @@ Large disk support (FAT12 / FAT16) with up to 8 partitions and faster execution 
 - DIY small Z80 (CP/M) retrocomputers without MSX BASIC ROM
 - Reflash disk ROM from MSX
 
+[**Binaries**](cxdos1/bin)  
+The .bin files can be loaded from tape with the msx2cas android app.  
+The .com files can be started from the MSX-DOS command prompt.  
 
 ## CXDOS 2
 
