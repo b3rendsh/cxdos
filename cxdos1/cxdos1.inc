@@ -210,7 +210,7 @@ RAMAD3		equ	$F344		; slotid DOS ram page 3
 FILMAX		equ	$F345		; maximum number of diskbasic FCB's
 DOSFLG		equ	$F346		; MSXDOS started flag
 SNUMDR		equ	$F347		; number of drives
-MASTER		equ	$F348		; slotid disksystem ROM
+MASTER		equ	$F348		; slotid disksystem ROM (not used)
 HIMSAV		equ	$F349	  	;
 DOSHIM		equ	$F34B	  	;
 SSECBUF		equ	$F34D		;

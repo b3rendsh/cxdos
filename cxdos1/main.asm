@@ -198,7 +198,7 @@ mtcount:	call	H_TIMI			; H.TIMI handler saves register AF
 		ld	hl,VARWRK+MYSIZE
 		ld	de,DATABA
 		and	a
-		sbc	hl,de			 ; bytes needed for static workarea+workarea driver
+		sbc	hl,de			; bytes needed for static workarea+workarea driver
 	IFDEF DEBUG
 		ld	b,'3'
 		jp	c,HaltSystem		; c=driver workarea way too big, panic
@@ -255,7 +255,6 @@ mtcount:	call	H_TIMI			; H.TIMI handler saves register AF
 		jr	c,r002			; c=no
 		ld	a,8			; limit to 8
 r002:		ld	(SNUMDR),a		; drives in system (only 1 interface supported)
-		ld	(MASTER),a		; master diskrom slotid (not used)
 		ld	hl,SDPBLI
 		push	hl
 		push	af

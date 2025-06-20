@@ -8,7 +8,7 @@ ifdef ComSpec
 	RMD	:=
 	SEARCH	:= find
 	CP	:= copy /b
-	GETDATE	:= powershell get-date -format "{yyyyMMdd}" 
+	GETDATE	:= powershell get-date -format "{yyyy-MM-dd}" 
 	QUOTE	:= "
 	/	:= $(strip \)
 else
@@ -16,7 +16,7 @@ else
 	RMD	:= /*
 	SEARCH	:= grep
 	CP	:= cp
-	GETDATE	:= date +'%Y%m%d'
+	GETDATE	:= date +'%Y-%m-%d'
 	QUOTE	:= '"'
 	/	:= /
 endif 
@@ -50,7 +50,7 @@ cfide1:	rdate
 	$(CP) obj$/soda_cxdos1__.bin bin$/CXDOS1C.BIN
 	@echo done
 
-jio1:
+jio1:	rdate
 	@echo Assembling CXDOS1 for JIO..
 	$(RMF) obj$(RMD)
 	z80asm -b -d -l -m -DJIO -Oobj -o=jio_cxdos1 $(SOURCES1)
