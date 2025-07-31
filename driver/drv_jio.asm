@@ -1,10 +1,15 @@
 ; ------------------------------------------------------------------------------
-; drv_jio.asm
+; drv_jio_alt.asm
 ;
 ; Copyright (C) 2025 All rights reserved
 ; JIO MSX-DOS 2 driver by Louthrax
 ; JIO MSX-DOS 1 driver and CRC routines by H.J. Berends
 ; 115K2 transmit/receive routines based on code by Nyyrikki
+;
+; Alternative driver:
+; + Optional LPTIO build: use LPT port with 2 stop bits (115200/8N2)
+; + Joystick port receive timing alternatives (115200/8N1)
+; + UART 1655X at base i/o port 0x80
 ; ------------------------------------------------------------------------------
 
 IF !(CXDOS1 || CXDOS2)
@@ -28,6 +33,26 @@ MYSIZE		equ	$7
 
 SECLEN		equ	512
 PART_BUF	equ	TMPSTK	; Copy of disk info / Master Boot Record
+
+; UART definitions
+
+ubase		equ	$80
+
+UART_RBR	equ	0		; dlab=0: receiver buffer register (read)
+UART_THR	equ	0		; dlab=0: transmitter holding register (write)
+UART_IER	equ	1		; dlab=0: interrupt enable register 
+UART_IIR	equ	2		; interrupt identifcation register (read)
+UART_FCR	equ	2		; fifo control register (write)
+UART_LCR	equ	3		; line control register 
+UART_MCR	equ	4		; modem control register 
+UART_LSR	equ	5		; line status register 
+UART_MSR	equ	6		; modem status register 
+UART_SCR	equ	7		; scratch register 
+UART_DLL	equ	0		; dlab=1: divisor latch (ls)
+UART_DLM	equ	1		; dlab=1: divisor latch (ms)
+UART_AFR	equ	2		; dlab=1: alternate function register
+
+; ------------------------------------------------------------------------------
 
 
 ; ----------------------------------------
@@ -91,6 +116,21 @@ INIHRD:		ld	a,$06
                 call	SNSMAT		; Check if CTRL key is pressed
                 and	2
                 jr	z,r101		; z=yes: exit disk init
+	IFDEF UART
+		xor	a
+		out	(ubase+UART_IER),a	; set uart interrupts off
+		ld	a,$80			; set DLAB=1
+		out	(ubase+UART_LCR),a
+		ld	a,$01			; set divisor low byte (6=19K2, 3=38K4, 2=57K6, 1=115K2 with 1.84Mhz uart clock)
+		out	(ubase+UART_DLL),a
+		ld	a,$00			; set divisor high byte
+		out	(ubase+UART_DLM),a
+		ld	a,$03			; set framing to 8N1 / DLAB=0 (3=8N1 7=8N2)
+		out	(ubase+UART_LCR),a
+		; ld	a,$07			; enable FIFO buffer and reset it's counters
+		ld	a,$00			; disable FIFO buffer (when using 16550 with FIFO bug)
+		out	(ubase+UART_FCR),a
+	ENDIF          
                 xor	a
                 ret
 r101:		inc	sp
@@ -123,10 +163,16 @@ DRIVES:
         ldir
 
         call	PrintMsg
+	db	12,"JIO "
+IFDEF LPTIO
+        db	"LPT "
+ELIFDEF UART
+	db	"UART "
+ENDIF
 IFDEF IDEDOS1
-        db	12,"JIO MSX-DOS 1",13,10
+        db	"MSX-DOS 1",13,10
 ELSE
-        db	12,"JIO MSX-DOS 2",13,10
+        db	"MSX-DOS 2",13,10
 ENDIF
         db	"Rev.: "
         INCLUDE	"rdate.inc"		; Revision date
@@ -180,12 +226,12 @@ ENDIF
         pop     af
         ret
 
-;********************************************************************************************************************************
+; ------------------------------------------------------------------------------
 ; INIENV - Initialize the work area (environment)
 ; Input : None
 ; Output: None
 ; May corrupt: AF,BC,DE,HL,IX,IY
-;********************************************************************************************************************************
+; ------------------------------------------------------------------------------
 
 INIENV:	call	GETWRK			; HL and IX point to work buffer
         xor	a
@@ -816,7 +862,7 @@ _ENT_PARM_DIRECT_L09:
         add     ix,sp
         jp      (hl)
 
-;********************************************************************************************************************************
+; ------------------------------------------------------------------------------
 ; DSKIO - Disk Input / Output
 ; Input:
 ;   Carry flag = clear ==> read, set ==> write
@@ -844,7 +890,7 @@ _ENT_PARM_DIRECT_L09:
 ;
 ;	 B = remaining sectors
 ; May corrupt: AF,BC,DE,HL,IX,IY
-;********************************************************************************************************************************
+; ------------------------------------------------------------------------------
 
 DSKIO:
         di
@@ -899,6 +945,7 @@ sec_write:
         pop	hl
         jr	c,sec_err
         inc	h
+        inc	h
 sec_next:
         xor	a
 sec_err:
@@ -924,7 +971,7 @@ ENDIF
         ld      b,0
         ret
 
-;********************************************************************************************************************************
+; ------------------------------------------------------------------------------
 ; DSKCHG - Disk change
 ; Input:
 ;   A  = Drive number
@@ -940,7 +987,7 @@ ENDIF
 ;	 Carry flag set
 ;	 Error code in A
 ; May corrupt: AF,BC,DE,HL,IX,IY
-;********************************************************************************************************************************
+; ------------------------------------------------------------------------------
 DSKCHG:
         di
         ld	b,a			; save drive
@@ -1010,11 +1057,11 @@ GetDriveMask:
 
 masks:	db	0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80
 
-;********************************************************************************************************************************
-
-; CDE : Sector
-; B   : Length
-; HL  : Address
+; ------------------------------------------------------------------------------
+; Input: CDE = Sector
+;          B = Length
+;         HL = Address
+; ------------------------------------------------------------------------------
 
 DoCommand:
         push    ix              ; _pucFlagsAndCommand
@@ -1024,9 +1071,9 @@ DoCommand:
         ld      b,a             ; _ulSector in BCDE
 
         call    ucDoCommand
-        pop hl
-        pop hl
-        pop hl
+        pop	hl
+        pop	hl
+        pop	hl
 
         or      a
         ret     z
@@ -1034,18 +1081,43 @@ DoCommand:
         scf
         ret
 
-;********************************************************************************************************************************
-; IN:  HL = DATA
-;      BC = LENGTH
-;********************************************************************************************************************************
+; ------------------------------------------------------------------------------
+; Transmit data on joystick 2 port or lpt port (LPTIO) or 1655X (UART)
+; Input: DE = DATA
+;        BC = LENGTH
+; ------------------------------------------------------------------------------
+IFDEF UART
+vJIOTransmit:
+	ex	de,hl
+uart_send:
+	;in	a,(ubase+UART_MSR)	; use FIFO buffer
+	;bit	4,a			; cts: clear to send?
+	in	a,(ubase+UART_LSR)	; don't use FIFO buffer
+	bit	5,a			; thr: transmitter ready?
+	jr	z,uart_send		; z=no
+	ld	a,(hl)
+	out	(ubase+UART_THR),a	; send data
+	inc	hl
+	dec	bc
+	ld	a,b
+	or	c
+	jr	nz,uart_send
+	ret
 
+ELSE
 vJIOTransmit:
         exx
         push    bc
         push    de
         exx
 
+IFDEF LPTIO
+	push	ix
+	call	vJIOTransmit2
+	pop	ix
+ELSE
         call vJIOTransmit2
+ENDIF
 
         exx
         pop     de
@@ -1057,6 +1129,11 @@ vJIOTransmit2:
         ex      de,hl
         inc	bc
         exx
+IFDEF LPTIO
+	ld	e,1
+	ld	d,0
+	ld	c,$90
+ELSE
         ld	a,15
         out	($a0),a
         in	a,($a2)
@@ -1065,93 +1142,160 @@ vJIOTransmit2:
         xor	4
         ld	d,a
         ld	c,$a1
+ENDIF
 
         db	$3e
-JIOTransmitLoop:
+JIOTxLoop:
 	ret	nz
-        out	(c),e
+        out	(c),e		; 14
+IFDEF LPTIO
+	; one more stop bit
+	add	ix,ix		; 17
+	out	(c),e
+ENDIF
         exx
         ld	a,(hl)
         cpi
         ret	po
         exx
         rrca
-        out	(c),d	; =0
+        out	(c),d		; =0
         ret	nz
-        jp	c,TRANSMIT10
-        out	(c),d	; -0
+        jp	c,Tx10
+        out	(c),d		; -0
         rrca
-        jp	c,TRANSMIT11
-;________________________________________________________________________________________________________________________________
+        jp	c,Tx11
 
-TRANSMIT01:	out	(c),d	; -1
+; ------------------------------------------------------------------------------
+
+Tx01:	out	(c),d		; -1
         rrca
-        jr	c,TRANSMIT12
+        jr	c,Tx12
         nop
 
-TRANSMIT02:	out	(c),d	; -0
+Tx02:	out	(c),d		; -0
         rrca
-        jp	c,TRANSMIT13
+        jp	c,Tx13
 
-TRANSMIT03:	out	(c),d	; -1
+Tx03:	out	(c),d		; -1
         rrca
-        jr	c,TRANSMIT14
+        jr	c,Tx14
         nop
 
-TRANSMIT04:	out	(c),d	; -0
+Tx04:	out	(c),d		; -0
         rrca
-        jp	c,TRANSMIT15
+        jp	c,Tx15
 
-TRANSMIT05:	out	(c),d	; -1
+Tx05:	out	(c),d		; -1
         rrca
-        jr	c,TRANSMIT16
+        jr	c,Tx16
         nop
 
-TRANSMIT06:	out	(c),d	; -0
+Tx06:	out	(c),d		; -0
         rrca
-        jp	c,TRANSMIT17
+        jp	c,Tx17
 
-TRANSMIT07:	out	(c),d	; -1
-        jp	JIOTransmitLoop
-;________________________________________________________________________________________________________________________________
+Tx07:	out	(c),d		; -1
+        jp	JIOTxLoop
 
-TRANSMIT10:	out	(c),e	; -0
+; ------------------------------------------------------------------------------
+
+Tx10:	out	(c),e		; -0
         rrca
-        jp	nc,TRANSMIT01
+        jp	nc,Tx01
 
-TRANSMIT11:	out	(c),e	; -1
+Tx11:	out	(c),e		; -1
         rrca
-        jr	nc,TRANSMIT02
+        jr	nc,Tx02
         nop
 
-TRANSMIT12:	out	(c),e	; -0
+Tx12:	out	(c),e		; -0
         rrca
-        jp	nc,TRANSMIT03
+        jp	nc,Tx03
 
-TRANSMIT13:	out	(c),e	; -1
+Tx13:	out	(c),e		; -1
         rrca
-        jr	nc,TRANSMIT04
+        jr	nc,Tx04
         nop
 
-TRANSMIT14:	out	(c),e	; -0
+Tx14:	out	(c),e		; -0
         rrca
-        jp	nc,TRANSMIT05
+        jp	nc,Tx05
 
-TRANSMIT15:	out	(c),e	; -1
+Tx15:	out	(c),e		; -1
         rrca
-        jr	nc,TRANSMIT06
+        jr	nc,Tx06
         nop
 
-TRANSMIT16:	out	(c),e	; -0
+Tx16:	out	(c),e		; -0
         rrca
-        jp	nc,TRANSMIT07
+        jp	nc,Tx07
 
-TRANSMIT17:	out	(c),e	; -1
-        jp	JIOTransmitLoop
+Tx17:	out	(c),e		; -1
+        jp	JIOTxLoop
 
-;********************************************************************************************************************************
-;********************************************************************************************************************************
+ENDIF ; UART
 
+; ------------------------------------------------------------------------------
+; Receive data on joystick 2 port or lpt port (LPTIO) or 1655X (UART)
+; Input: DE = DATA
+;        BC = LENGTH
+; ------------------------------------------------------------------------------
+IFDEF UART
+bJIOReceive:
+	ex	de,hl
+	in	a,(ubase+UART_MCR)
+	or	%00000010		; RTS on
+	out	(ubase+UART_MCR),a
+
+uart_sync1:	
+	call	rcv_ready
+	in	a,(ubase+UART_RBR)	; get header byte
+	cp	$ff
+	jr	nz,uart_sync1
+
+uart_sync2:	
+	call	rcv_ready
+	in	a,(ubase+UART_RBR)	; get header byte
+	cp	$f0			; sync?
+	jr	z,rcv_loop		; nz=no
+	cp	$ff
+	jr	z,uart_sync2
+	jr	uart_sync1
+	
+rcv_loop:
+	call	rcv_ready
+	in	a,(ubase+UART_RBR)	; receive data
+	ld	(hl),a
+	inc	hl
+	dec	bc			; data counter
+	ld	a,b
+	or	c
+	jr	nz,rcv_loop
+	in	a,(ubase+UART_MCR)
+	and	%11111101		; RTS off
+	out	(ubase+UART_MCR),a
+	ld	a,1
+	ret
+
+rcv_ready:
+	ld	de,$0000		; time-out counter
+ready_loop:
+	in	a,(ubase+UART_LSR)
+	bit	0,a			; receiver data ready?
+	ret	nz
+	dec	de
+	ld	a,d
+	or	e
+	jr	nz,ready_loop
+	pop	af			; ditch return address
+	in	a,(ubase+UART_MCR)
+	and	%11111101		; RTS off
+	out	(ubase+UART_MCR),a
+	xor	a
+	ret
+
+ELSE
 bJIOReceive:
         ld      h,d
         ld      l,e
@@ -1162,44 +1306,64 @@ bJIOReceive:
         push	de
 
         ld      de,0
-
-        dec	hl
-        ld	b,(hl)		; What if HL=0 ?
-        ld	c,$a2
+	dec	hl
         ld	ix,0
         add	ix,sp
-        ld	a,15
+
+IFDEF LPTIO
+	; probe the lpt port to determine receive method:
+	; 1. unused bits 0,2..7 are last written value on databus or always 0
+	; 2. unused bits 0,2..7 are always 1
+	ld	c,$90		; lpt i/o port
+        out	(c),d		; clear z80 data bus (d=0)
+        in	a,(c)
+        and	$fd
+        jr	z,HeaderPO	; method 1
+        cp	$fd
+        jr	z,HeaderPE	; method 2
+        jr	RxTimeOut	; other, not supported
+ELSE
+        ld	c,$a2
+        ld	a,15		; PSG r15
         out	($a0),a
         in	a,($a2)
-        or	64
+        or	64		; bit 6: select joystick 2
         out	($a1),a
-        ld	a,14
+        ld	a,14		; PSG r14
         out	($a0),a
         in	a,($a2)
-        or	1
+        or	1		; bit 0: rx pin 1
         jp	pe,HeaderPE
-;________________________________________________________________________________________________________________________________
+ENDIF
+        
+; ------------------------------------------------------------------------------
 
-HeaderPO:	dec	de		;  7
-        ld	a,d			;  5
-        or	e			;  5
-        jr	z,ReceiveTimeOut	;  8
+HeaderPO:	
+	dec	de		;  7
+        ld	a,d		;  5
+        or	e		;  5
+        jr	z,RxTimeOut 	;  8
 
-        in	f,(c)	; 14
+        in	f,(c)		; 14
         jp	po,HeaderPO	; 11   LOOP=50 (2-CLOCKS)
-        rlc	a
-        in	f,(c)	; 14
+        rlc	a		; 10
+        in	f,(c)		; 14
         jp	po,HeaderPO	; 11   At least 2 clocks needed to be down
 
-WU_PO:	in	f,(c)	; 14
+WU_PO:	in	f,(c)		; 14
         jp	pe,WU_PO	; 11   LOOP=25
-        pop	de
-        push	de
+        pop	de		; 11
+        push	de		; 11
 
 RX_PO:	in	f,(c)		; 14
         jp	po,RX_PO	; 11   LOOP=25
-        ld	(hl),b		;  8  = 33 CYCLES
 
+	;timing alternatives:
+	;ret	po		;  6 = 31 CYCLES
+        ;ld	sp,hl		;  7  = 32 CYCLES
+        ld	b,(hl)		;  8  = 33 CYCLES
+	;neg			; 10 =  35 CYCLES
+        
         in	a,(c)		; 14   Bit 0
         nop			;  5
         rrca			;  5
@@ -1239,33 +1403,41 @@ RX_PO:	in	f,(c)		; 14
         xor	b		;  5
         rrca			;  5
 
-        ld	b,a		;  5
-        ld	a,d		;  5
-        or	e		;  5
-        jp	nz,RX_PO	; 11
-;________________________________________________________________________________________________________________________________
+IFDEF LPTIO
+	rrca			;  5 extra rotate because rx is bit 1
+        ld	(hl),a		;  8 instruction uses data bus write
+        xor	a		;  5 
+        out	($90),a		; 12 clear z80 data bus
+ELSE
+        ld	(hl),a		;  8
+ENDIF
+
+	ld	a,d		;  5
+	or	e		;  5
+	jp	nz,RX_PO	; 11
+     
+; ------------------------------------------------------------------------------
 
 ReceiveOK:
-        ld	(hl),b
         ld	sp,ix
-
         pop	de
         pop	ix
         ld      a,1
         ret
 
-ReceiveTimeOut:
+RxTimeOut:
         pop	de
         pop	ix
         xor     a
         ret
 
-;________________________________________________________________________________________________________________________________
+; ------------------------------------------------------------------------------
 
-HeaderPE:	dec	de		;  7
-        ld	a,d			;  5
-        or	e			;  5
-        jr	z,ReceiveTimeOut	;  8
+HeaderPE:	
+	dec	de		;  7
+        ld	a,d		;  5
+        or	e		;  5
+        jr	z,RxTimeOut	;  8
 
         in	f,(c)		; 14
         jp	pe,HeaderPE	; 11   LOOP= 50 (2-CLOCKS)
@@ -1275,12 +1447,17 @@ HeaderPE:	dec	de		;  7
 
 WU_PE:	in	f,(c)		; 14
         jp	po,WU_PE	; 11   LOOP=25
-        pop	de
-        push	de
+        pop	de		; 11
+        push	de		; 11
 
 RX_PE:	in	f,(c)		; 14
         jp	pe,RX_PE	; 11   LOOP=25
-        ld	(hl),b		;  8 = 33 CYCLES
+	
+	;timing alternatives:
+	;ret	pe		;  6 = 31 CYCLES
+        ;ld	sp,hl		;  7  = 32 CYCLES
+	ld	b,(hl)		;  8  = 33 CYCLES
+	;neg			; 10 =  35 CYCLES
 
         in	a,(c)		; 14   Bit 0
         cpl			;  5
@@ -1321,14 +1498,20 @@ RX_PE:	in	f,(c)		; 14
         xor	b		;  5
         rrca			;  5
 
-        ld	b,a		;  5
-        ld	a,d		;  5
+IFDEF LPTIO
+	rrca			;  5 extra rotate because rx is bit 1
+ENDIF
+	ld	(hl),a		;  8 instruction uses data bus write
+
+	ld	a,d		;  5
         or	e		;  5
         jp	nz,RX_PE	; 11
 
-        jr	ReceiveOK
+        jr	ReceiveOK 
 
-;________________________________________________________________________________________________________________________________
+ENDIF ; UART
+
+; ------------------------------------------------------------------------------
 
 ; Compute xmodem CRC-16
 ; Input:  DE    = buffer

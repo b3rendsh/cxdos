@@ -21,7 +21,7 @@ else
 	/	:= /
 endif 
 
-all:	ppide1 cfide1 jio1
+all:	ppide1 cfide1 jio1 pio1
 
 rdate:
 	@echo db $(QUOTE)$(shell $(GETDATE))$(QUOTE) > rdate.inc
@@ -33,7 +33,7 @@ ppide1:	rdate
 	z88dk-appmake +glue -b obj/beer_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/beer_cxdos1__.bin bin$/CXDOS1B.COM
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DDEBUG -DBLOAD -DPPIDE -Oobj -o=beer_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DDEBUG -DBASBIN -DPPIDE -Oobj -o=beer_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/beer_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/beer_cxdos1__.bin bin$/CXDOS1B.BIN
 	@echo done
@@ -45,7 +45,7 @@ cfide1:	rdate
 	z88dk-appmake +glue -b obj/soda_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/soda_cxdos1__.bin bin$/CXDOS1C.COM
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBLOAD -DCFIDE -Oobj -o=soda_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DBASBIN -DCFIDE -Oobj -o=soda_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/soda_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/soda_cxdos1__.bin bin$/CXDOS1C.BIN
 	@echo done
@@ -57,10 +57,21 @@ jio1:	rdate
 	z88dk-appmake +glue -b obj/jio_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/jio_cxdos1__.bin bin$/CXDOS1A.COM
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBLOAD -DJIO -Oobj -o=jio_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DBASBIN -DJIO -Oobj -o=jio_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/jio_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/jio_cxdos1__.bin bin$/CXDOS1A.BIN
 
+pio1:	rdate
+	@echo Assembling CXDOS1 for JIO LPT..
+	$(RMF) obj$(RMD)
+	z80asm -b -d -l -m -DJIO -DLPTIO -Oobj -o=pio_cxdos1 $(SOURCES1)
+	z88dk-appmake +glue -b obj/pio_cxdos1 --filler 0xFF --clean
+	$(CP) obj$/pio_cxdos1__.bin bin$/CXDOS1AP.COM
+	$(RMF) obj$(RMD)
+	z80asm -b -d -l -m -DBASBIN -DJIO -DLPTIO -Oobj -o=pio_cxdos1 $(SOURCES1)
+	z88dk-appmake +glue -b obj/pio_cxdos1 --filler 0xFF --clean
+	$(CP) obj$/pio_cxdos1__.bin bin$/CXDOS1AP.BIN
+	
 clean:
 	$(RMF) obj$(RMD)
 	$(RMF) rdate.inc

@@ -659,7 +659,7 @@ ValPath:	call	H_MOVN
 		jp	DosValFCB		; LODNAM: validate FCB filename
 
 ; Subroutine validate driveid (FCB style)
-; Input:	A = driveid
+; Input: A = driveid
 ValDrive:	ld	c,a
 		ld	a,(SNUMDR)		; maximum drives
 		cp	c			; drive number larger than max?
@@ -671,10 +671,7 @@ ValDrive:	ld	c,a
 _valdrive1:	ld	(THISDR),a		; set current driveid
 		ret
 
-;	 Subroutine	get max record and extent
-;	 Inputs
-;	 Outputs	 ________________________
-
+; Subroutine get max record and extent
 GetMaxRecExt:	ld	a,(iy+31)
 		or	a
 		jr	nz,_getmax2		; filesize > 16777215, use max value
@@ -1059,9 +1056,7 @@ DOS_ABSREA:	ld	b,h
 		call	GetDPBAdr		; get pointer to DPB of current drive
 		ld	hl,(DMAADD)		; transferaddress
 
-;	 Subroutine	read sectors with DOS error handling
-;	 Inputs
-;	 Outputs	 ________________________
+; Subroutine read sectors with DOS error handling
 DiskReadSec:	call	H_DREA
 		xor	a
 		ld	(READOP),a		; flag read disk operation
@@ -1343,8 +1338,8 @@ _zwrite4:	ld	a,(DSKERR)		; result record operation
 		ld	(iy+36),d
 		ret
 
-_zwrite5:		ld	hl,1		; 1 record
-_zwrite6:		push	de
+_zwrite5:	ld	hl,1		; 1 record
+_zwrite6:	push	de
 		pop	iy
 		ld	c,(iy+33)		; R0
 		ld	b,(iy+34)		; R1
@@ -1352,7 +1347,7 @@ _zwrite6:		push	de
 		ld	d,(iy+36)		; R3
 		ret
 
-_zwrite7:		ret	z
+_zwrite7:	ret	z
 		inc	hl
 		ld	a,h
 		or	l
@@ -1360,7 +1355,7 @@ _zwrite7:		ret	z
 		inc	de
 		ret
 
-_zwrite8:		pop	hl
+_zwrite8:	pop	hl
 		ld	l,c
 		ld	h,b
 		ld	a,1
@@ -4176,6 +4171,7 @@ PH_CALLF:	exx
 
 ; ---------------------------------------------------------
 ; Subroutine CALSLT
+; Note: interrupts are disabled after call (same as BIOS)
 ; ---------------------------------------------------------
 PH_CALSLT:	exx
 		ex	af,af'
@@ -4191,27 +4187,21 @@ r023:		ld	c,a
 		push	bc
 		push	de
 		push	af
-		call	CallPrim
+		call	CallPrim		; disables interrupts
 		exx
 		ex	af,af'
 		pop	bc
 		pop	hl
-		ld	a,i
-		di
 		pop	de
-		push	af			; store IFF2 flag
 		ld	a,b
 		cp	d
 		ld	b,d
 		jr	nz,r024
 		ld	a,e
-		ld	(AFFFF),a
+		ld	(AFFFF),a		; interrupts already disabled
 r024:		call	nz,SSLOTE
 		ld	(hl),e
-		pop	af			; restore IFF2 flag
-		jp	po,r025			; maskable interrupts where disabled, leave disabled
-		ei
-r025:		ex	af,af'
+		ex	af,af'
 		exx
 		ret
 

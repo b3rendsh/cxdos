@@ -24,7 +24,7 @@
 		INCLUDE	"cxdos1.inc"
 
 		SECTION	MAIN			; Main entry point / initial program load
-	IFDEF BLOAD
+	IFDEF BASBIN
 		ORG	BOT32K-7		; 0x8000 - 7 bytes for BIN header
 	ELSE
 		ORG	TBASE			; 0x0100: Start of TPA
@@ -79,7 +79,7 @@
 ; *** Header ***
 ; ------------------------------------------------------------------------------
 
-	IFDEF BLOAD
+	IFDEF BASBIN
 		db	$fe			; ID
 		dw	BOT32K			; Start address
 		dw	SysEnd			; End address
@@ -830,7 +830,7 @@ DataSize	EQU	$-DataBegin
 ; Assemble modules in following order:
 ; main		initialization code
 ; kernel	kernel code
-; sys		msxdos.ys
+; sys		msxdos.sys
 
 DosCode		EQU	DosData+DataSize
 SysCode		EQU	DosCode+DosSize

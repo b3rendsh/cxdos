@@ -192,16 +192,16 @@ LoadErr:	ld	de,MsgInsertDos		; insert DOS disk message
 
 LoadOk:		ld	hl,0
 		ld	(CommandM+33+0),hl
-		ld	(CommandM+33+2),hl		; random record = 0
+		ld	(CommandM+33+2),hl	; random record = 0
 		inc	hl
-		ld	(CommandM+14),hl		; record size = 1
+		ld	(CommandM+14),hl	; record size = 1
 		ld	hl,TBASE		; TPA base address
 		ld	(DMAADD),hl		; initialize DMA address
 		ld	de,CommandM		; COMMAND.COM FCB
 		ld	hl,JBDOS-TBASE
 		call	DOS_BLKRD
 		or	a
-		jr	z,LoadErr			; z=no, handle error
+		jr	z,LoadErr		; z=no, handle error
 		jp	TBASE			; start COMMAND.COM
 
 ; unsupported function
@@ -394,13 +394,13 @@ dskerr1:	ldir
 		cp	$0a			; write fault while reading ?
 		ld	de,MsgMedia		; unsupported media message
 		push	af			; store error
-		jr	z,dskerr2			; z=yes, handle error
+		jr	z,dskerr2		; z=yes, handle error
 		and	$fe			; ignore read/write flag
 		ld	de,MsgWrProtect		; write protect message
-		jr	z,dskerr2			; write proctect, handle error
+		jr	z,dskerr2		; write proctect, handle error
 		cp	2			; not ready ?
 		ld	de,MsgNotReady		; not ready message
-		jr	z,dskerr2			; z=yes, handle error
+		jr	z,dskerr2		; z=yes, handle error
 		ld	de,MsgDisk		; disk message
 dskerr2:	call	SPRTBUF
 		ld	de,MsgError		; error drive message
@@ -437,7 +437,7 @@ BAD_FAT:	ld	(MsgDrive),a		; store drive letter in message
 BRK_ERR:	ld	sp,SysBoot
 		ld	a,(PFLAG)
 		or	a			; console to printer ?
-		jr	z,brkerr2			; z=no, skip
+		jr	z,brkerr2		; z=no, skip
 		ld	bc,1200
 brkerr1:	push	bc
 		call	DOS_CONSTA
@@ -450,7 +450,7 @@ brkerr2:	ld	a,3			; CTRL-C
 		call	DOS_BUFOUT		; console output (with ^ for control characters)
 		ld	a,(BATCHFLAG)
 		or	a			; running a batch file ?
-		jr	z,brkerr4			; z=no, skip
+		jr	z,brkerr4		; z=no, skip
 brkerr3:	ld	de,MsgTermBatch		; terminate batch file message
 		call	SPRTBUF
 		call	DOS_CONIN
