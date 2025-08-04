@@ -1,0 +1,41 @@
+MAXENT: DOS1 FAT16 enhancement
+==============================
+
+Implementation of internal 16-bit maximum root directory entry variable which replaces the 8-bit variable.
+The new maximum root directory entry value is 0x0FFF (4095) because maximum directory sectors is 256.
+(256 x 512 sectorsize / 32 direntry size = 4096)
+
+Backward compatible with existing DOS1 drivers / disksystem.
+
+Command.com may show a cosmetic error with the DIR command:
+The total number of files is modulo 256 (e.g. for 266 files, total displayed is 10),
+on a FAT16 drive with exactly 256 or 512 entries then "File not found" is displayed.
+
+Changes in FCB structure
+------------------------
+Offset 0x18 DEVID:
+    if value >= 0x80 then DEVID else high byte of DIRLOC.
+    bit 7 remains device flag and bit 6 remains disk file changed flag.
+    
+DEVID doesn't exist in DOS 2 FCB's and therefore minimal chances of new incompatibility.
+
+
+Changes in internal kernel / data structures 
+--------------------------------------------
+
+The BPB is extended with 2 bytes:
+Offset 0x0B: if 0 then MAXENT16 is used
+Offset 0x15: 16-bit MAXENT16 value (max. 0x0FFF)
+
+Kernel subroutines:
+Parameter directory entry in register A replaced by register HL.
+Hooks H.GETE, H.NEXT and maybe other DOS hooks affected.
+
+System variables:
+SPRTBUF (0xF1C9) jumps to 16-byte PRTBUF routine which is relocated, so 13 bytes can be used for new variables
+LASTEN (0xF2B8) replaced by LASTEN16 (0xF1CC)
+ENTFRE (0xF2FE) replaced by ENTFRE16 (0xF1CE)
+SRCHLO (0xF30B) replaced by SRCHLO16 (0xF1D0)
+LASTEN, ENTFRE and SRCHLO are used for invalid flag (0xFF=invalid or 0x00=valid)
+
+

@@ -13,6 +13,7 @@
 ; ------------------------------------------------------------------------------
 
 ;DEBUG		equ	$01		; Include debug information / integrity checks
+MAXENT		equ	$01		; Use 16-bit maximum directory entries value (FAT16)
 
 TBASE		equ	$0100		; Start of TPA
 BOT32K		equ	$8000		; Bottom of 32 KB RAM
@@ -26,6 +27,9 @@ DOSMAX		equ	$1F60		; Maximum size of kernel code
 DOSFREE		equ	DOSBASE+DOSMAX	; Bottom of free variable memory for DOS (256-byte boundary)
 
 ; CXDOS
+LASTEN16	equ	$F1CC		; 16-bit current direntry number (LASTEN=0xFF if invalid)
+ENTFRE16	equ	$F1CE		; 16-bit first free direntry (ENTFRE=0xFF if none found)
+SRCHLO16	equ	$F1D0		; 16-bit saved current direntry number search first/next (SRCHLO=0xFF if invalid)
 MYWORK		equ	$F1D3		; pointer to driver workarea
 SP_IRQ		equ	$F1D5		; temporary save stackpointer (KEYINT)
 IRQ_ST		equ	$F1D7		; pointer to temporary stack (KEYINT)
@@ -188,7 +192,7 @@ SPSAVE		equ	$F304		; MSX-DOS save stackpointer
 CPMCAL		equ	$F306	  	; CP/M function
 SRCHFC		equ	$F307		; saved pointer to FCB search first, used for search next
 SRCHIX		equ	$F309		; saved pointer to DPB search first, used for search next
-SRCHLO		equ	$F30B		; saved current direntry number search first/next (FFh means invalid)
+SRCHLO		equ	$F30B		; saved current direntry number search first/next (0xFF means invalid)
 FCBEXT		equ	$F30C		; original EX byte FCB
 RAWFLG		equ	$F30D		; read after write (verify) flag
 COUNTR		equ	$F30E  		;

@@ -29,6 +29,9 @@
 		PUBLIC	PH_CALLF
 		PUBLIC	PH_CALSLT
 		PUBLIC	PH_ENASLT
+	IFDEF MAXENT
+		PUBLIC	PH_STROUT
+	ENDIF
 
 		; sys entry points
 		PUBLIC	DOS_SSBIOS
@@ -497,7 +500,12 @@ _find5:		call	NextDir			; get next direntry (while searching)
 _find6:		ld	a,(ENTFRE)
 		inc	a			; already found a free direntry ?
 		jr	nz,_find7		; nz=yes
+	IFDEF MAXENT
+		ld	de,(LASTEN16)
+		ld	(ENTFRE16),de
+	ELSE
 		ld	a,(LASTEN)
+	ENDIF
 		ld	(ENTFRE),a		; no, register it
 _find7:		ld	a,(hl)
 		or	a			; unused direntry ?
@@ -506,28 +514,57 @@ _find7:		ld	a,(hl)
 		ret
 
 ; Subroutine get next direntry (at start of search)
-FirstNextDir:	ld	a,(LASTEN)
+FirstNextDir:	
+	IFDEF MAXENT
+		ld	a,(LASTEN)
+		inc	a			; invalid flag ?
+		jr	nz,_firstnext1		; nz=no
+		ld	(LASTEN),a		; clear invalid flag
+		ld	h,a			; hl=0
+		ld	l,a
+		jr	GetDir
+_firstnext1:	call	LastEntry		; last direntry?
+		ld	hl,(LASTEN16)
+		inc	hl
+	ELSE
+		ld	a,(LASTEN)
 		inc	a
-		cp	(ix+11)			; last direntry ?
+		cp	(ix+11)			; last direntry or reset flag ?
+	ENDIF
 		jr	nc,UpdateDir		; nc=yes, update directory of disk when needed and quit
 
 ; Subroutine get direntry
 GetDir:		call	H_GETE
+	IFDEF MAXENT
+		; HL = directory entry number
+		ld	(LASTEN16),hl
+		ld	a,l
+	ELSE
+		; A  = directory entry number
 		ld	(LASTEN),a
 		ld	c,a
+	ENDIF
 		and	(ix+4)			; dirmask
 		ld	l,a
 		ld	h,0
-		add	hl,hl
+		add	hl,hl			; x 32 (direntry size)
 		add	hl,hl
 		add	hl,hl
 		add	hl,hl
 		add	hl,hl
 		ld	de,(SDIRBU)		; dirsector buffer
-		add	hl,de
-		ld	b,(ix+5)		; dirshift
+		add	hl,de			; hl = direntry offset in buffer
+		ld	b,(ix+5)		; dirshift (if 16 direntries fit in 1 sector then dirshift is 4)
+	IFDEF MAXENT
+		ld	de,(LASTEN16)
+_getdir1:	srl	d			; shift 16-bit value (max entries is therefore 0x0FFF)
+		rr	e
+		djnz	_getdir1
+		ld	c,e			; copy new dirsector
+	ELSE
 _getdir1:	srl	c
 		djnz	_getdir1
+	ENDIF
 		ld	a,(DIRBFI)
 		cp	c			; same as dirsector currently in buffer ?
 		jr	nz,_getdir2		; nz=no, go get it
@@ -541,11 +578,20 @@ _getdir2:	push	hl
 
 ; Subroutine get next direntry (while searching)
 NextDir:	call	H_NEXT
+	IFDEF MAXENT
+		call	LastEntry		; last direntry ?
+		jr	nc,UpdateDir		; nc=yes, update directory of disk when needed and quit
+		ld	de,(LASTEN16)
+		inc	de
+		ld	(LASTEN16),de
+		ld	a,e
+	ELSE
 		ld	a,(LASTEN)
 		inc	a
 		cp	(ix+11)			; last direntry ?
 		jr	nc,UpdateDir		; nc=yes, update directory of disk when needed and quit
 		ld	(LASTEN),a
+	ENDIF
 		ld	de,$0020
 		add	hl,de
 		and	(ix+4)			; dirmask
@@ -615,14 +661,24 @@ _rename3:	ld	(de),a
 		ld	(de),a			; orginal DR byte b7 set (ignore fileattribute)
 		call	ValDevName		; check if devicename
 		jr	nc,_rename5		; nc=yes, end rename with error
+	IFDEF MAXENT
+		ld	hl,(LASTEN16)
+		push	hl
+		ld	a,$ff
+		ld	(LASTEN),a		; flag direntry search start at the begin
+		call	FindNext		; find next direntry
+		pop	hl
+		jr	nc,_rename5
+	ELSE
 		ld	a,(LASTEN)
 		push	af
 		ld	a,$ff
 		ld	(LASTEN),a		; flag direntry search start at the begin
-		call	FindNext		; find next directoryentry
+		call	FindNext		; find next direntry
 		pop	bc
 		jr	nc,_rename5		; found, so resulting filename does already exist. end rename with error
 		ld	a,b
+	ENDIF
 		call	GetDir			; get direntry which get renamed
 		ex	de,hl
 		ld	hl,NAME1
@@ -735,13 +791,21 @@ _open2:		ld	(hl),c			; RC
 		ldi				; creation time
 		ld	a,(iy+11)
 		bit	7,a
-		jr	nz,_open3		; device,
+		jr	nz,_open3		; device
+	IFDEF MAXENT
+		ld	a,(LASTEN16+1)		; get direntry high byte
+		or	$40			; flag diskfile unchanged
+_open3:		ld	(de),a			; devicecode / direntry high byte
+		inc	de
+		ld	a,(LASTEN16)		; get direntry low byte
+	ELSE
 		ld	a,(ix+0)		; driveid
 		or	$40			; flag diskfile unchanged
 _open3:		ld	(de),a			; devicecode
 		inc	de
 		ld	a,(LASTEN)
-		ld	(de),a			; direntry number
+	ENDIF
+		ld	(de),a			; direntry number (not used if device)
 		inc	de
 		ld	a,(iy+26)
 		ld	(de),a
@@ -768,7 +832,7 @@ DskChgError:	ld	c,a
 		jr	GetFatSec		; get latest FAT (try again)
 
 ; Subroutine reset direntry search and get latest FAT
-ResetDir:	ld	a,$ff
+ResetDir:	ld	a,$ff			; MAXENT: no change required
 		ld	(LASTEN),a		; invalid latest direntry (search from the begin)
 		ld	(ENTFRE),a		; not found a free direntry
 
@@ -811,6 +875,14 @@ ChangeDPB:	ld	b,(hl)			; mediabyte of FAT sector
 		push	ix
 		pop	hl			; pointer to DPB
 		call	DiskGetDPB
+	IFDEF MAXENT
+		ld	a,(ix+$0b)		; MAXENT value
+		or	a			; if 0 then 16-bit value is set
+		jr	z,SetDPBAdr
+		; set 16-bit value in MAXENT16 for backward compatibility
+		ld	(ix+$15),a
+		ld	(ix+$16),$00
+	ENDIF
 
 ; Subroutine update pointer to DPB of current drive
 ; Input: hl = pointer to DPB
@@ -857,7 +929,7 @@ DOS_CLOSE:	push	de
 		call	ValPath			; validate FCB drive and filename
 		ld	a,$ff
 		ret	c			; invalid, quit with error
-		ld	a,(iy+24)
+		ld	a,(iy+24)		; MAXENT: bit 7 = device flag, bit 6 = FCB changed flag
 		and	$c0
 		ld	a,0			; ok
 		ret	nz			; device OR unchanged diskfile, quit
@@ -866,7 +938,14 @@ DOS_CLOSE:	push	de
 		cp	l			; same drive as owner datasector buffer ?
 		call	z,FlushDataBuf		; z=yes, flush datasector buffer
 		call	GetDPBAdr		; get pointer to DPB of current drive
+	IFDEF MAXENT
+		ld	a,(iy+24)
+		and	$0f
+		ld	h,a
+		ld	l,(iy+25)
+	ELSE
 		ld	a,(iy+25)		; direntrynumber
+	ENDIF
 		call	GetDir			; get direntry
 		ld	b,11
 		call	CmpName1		; compare with filename1
@@ -880,7 +959,7 @@ DOS_CLOSE:	push	de
 		add	hl,bc
 		ldi
 		ldi
-		ld	bc,0FFFCH
+		ld	bc,$fffc
 		add	hl,bc
 		ldi
 		ldi
@@ -888,7 +967,7 @@ DOS_CLOSE:	push	de
 		add	hl,bc
 		ldi
 		ldi
-		ld	bc,0FFF4H
+		ld	bc,$fff4
 		add	hl,bc
 		ld	bc,$0004
 		ldir
@@ -968,6 +1047,9 @@ DOS_CREATE:	push	de
 		ld	a,(ENTFRE)
 		cp	$ff			; found free direntry ?
 		jr	z,_create2		; z=no, quit with error (directory is full)
+	IFDEF MAXENT
+		ld	hl,(ENTFRE16)
+	ENDIF
 		call	GetDir			; get direntry
 		push	hl
 		pop	iy
@@ -1397,7 +1479,7 @@ _zwrite12:	ld	hl,(DMAADD)
 		ld	(TRANS),a		; flag do not increase sector
 		ld	bc,(RECCNT)		; number of records requested
 		call	DosMultiply		; * recordsize
-		ld	a,(iy+24)
+		ld	a,(iy+24)		; MAXENT: bit 7 = device flag
 		or	a
 		ret	m			; DOS device, quit
 		push	bc
@@ -1681,7 +1763,7 @@ _conrf2:	ld	(CONTPO),hl
 ; finish read record for dos devices
 DevReadFinish:	ld	(NEXTAD),de		; update current transferaddress
 		jp	nz,_readrec5
-		res	6,(iy+24)
+		res	6,(iy+24)		; MAXENT: bit 6 = FCB changed flag
 		jp	_readrec5
 
 _devrf1:	call	DosConout		; console output
@@ -1967,7 +2049,7 @@ WriteRecord:	call	_zwrite9		; initialize record info
 		pop	bc
 		pop	af
 		jp	m,DevWriteRec		; DOS device, special action
-		res	6,(iy+24)		; flag FCB changed
+		res	6,(iy+24)		; MAXENT: bit 6 = FCB changed flag
 		push	bc
 		call	CalcPartSec		; calculate partial sector transfers
 		pop	bc
@@ -2380,6 +2462,10 @@ ClusSetEntry:	call	H_RELB
 ; ---------------------------------------------------------
 DOS_SRCHFR:	call	ValFCB			; validate FCB, clear S2 and find direntry
 _sfirst1:	jr	c,_sfirst5		; error, quit
+	IFDEF MAXENT
+		ld	de,(LASTEN16)
+		ld	(SRCHLO16),de
+	ENDIF
 		ld	a,(LASTEN)
 		jr	z,_sfirst2		; file, save direntry number for search next
 		ld	a,$ff			; device, flag search next invalid
@@ -2399,7 +2485,7 @@ _sfirst3:	ld	bc,32
 		call	GetMaxRecExt		; get max record and extent
 		ld	a,(FCBEXT)
 		cp	b			; orginal FCB EX byte same as max extent ?
-		jr	z,_sfirst4			; same, RC = max record
+		jr	z,_sfirst4		; same, RC = max record
 		jr	nc,_sfirst5		; bigger, quit with error
 		ld	c,$80			; smaller, RC = 128 (means extend is full)
 _sfirst4:	ld	hl,(DMAADD)		; transferaddress
@@ -2429,7 +2515,12 @@ DOS_SRCHNX:	call	ValPath			; validate FCB drive and filename
 		ld	a,(SRCHLO)		; saved direntrynumber of last search first
 		cp	$ff
 		jr	z,_sfirst5		; flag search next invalid, quit with error
+	IFDEF MAXENT
+		ld	de,(SRCHLO16)
+		ld	(LASTEN16),de
+	ELSE
 		ld	(LASTEN),a
+	ENDIF
 		ld	ix,(SRCHIX)		; saved pointer to DPB
 		call	FindNext		; find next directoryentry
 		jr	_sfirst1		; finish
@@ -4299,6 +4390,31 @@ Masks:		db	$fc,$00,$fc,$01,$fc,$02,$fc,$03
 		db	$3f,$00,$3f,$40,$3f,$80,$3f,$c0
 
 
+	IFDEF MAXENT
+; ---------------------------------------------------------
+; Relocated STROUT routine
+; ---------------------------------------------------------
+PH_STROUT:	ld	a,(de)
+		inc	de
+		cp	'$'
+		ret	z
+		call	DosConout
+		jr	PH_STROUT
+		
+; ---------------------------------------------------------
+; Subroutine check for last entry in directory
+; ---------------------------------------------------------
+LastEntry:	push	hl
+		ld	hl,(LASTEN16)
+		inc	hl
+		ld	e,(ix+$15)
+		ld	d,(ix+$16)
+		or	a
+		sbc	hl,de			; last direntry ?
+		pop	hl
+		ret
+	ENDIF
+	
 ; ---------------------------------------------------------------------------------------
 ; Include ram resident part of disk interface driver
 

@@ -60,6 +60,9 @@
 		EXTERN	PH_CALLF
 		EXTERN	PH_CALSLT
 		EXTERN	PH_ENASLT
+	IFDEF MAXENT
+		EXTERN	PH_STROUT
+	ENDIF
 
 		; Defined by driver
 		EXTERN	INIHRD			; Initialize hardware
@@ -260,7 +263,11 @@ r002:		ld	(SNUMDR),a		; drives in system (only 1 interface supported)
 		push	af
 		ld	b,0
 		ld	c,a
+	IFDEF MAXENT
+		ld	de,23
+	ELSE
 		ld	de,21
+	ENDIF
 		call	DosMultiply		; bc*de = drives * size of DPB
 		call	AllocMemBC		; reserve number of bytes for the DPBs
 		ex	de,hl
@@ -272,7 +279,11 @@ r003:	  	ld	(hl),e
 		inc	hl
 		push	hl
 		ld	hl,DEFDPB
+	IFDEF MAXENT
+		ld	bc,23
+	ELSE
 		ld	bc,21
+	ENDIF
 		ldir				; initialize DPB
 		pop	hl
 		dec	a
@@ -760,12 +771,21 @@ DataBegin:
 ; Function $09 STROUT
 ; String output
 ; Input:  de = address of string
-AF1C9:	 	ld	a,(de)			; SPRTBUF
+AF1C9:	 	
+	IFDEF MAXENT
+		jp	PH_STROUT
+AF1CC:		dw	0			; LASTEN16
+AF1CE:		dw	0			; ENTFRE16
+AF1D0:		dw	0			; SRCHLO16
+AF1D2:		db	0			; reserved for variable
+	ELSE
+		ld	a,(de)			; SPRTBUF
 		inc	de
 		cp	'$'
 		ret	z
 		call	DosConout
 		jr	AF1C9
+	ENDIF
 
 AF1D3:		dw	0			; MYWORK
 AF1D5:		dw	0			; SP_IRQ
