@@ -235,10 +235,12 @@ mtcount:	call	H_TIMI			; H.TIMI handler saves register AF
 		ld	bc,$1400		; b=4*2+4*3 c=clear
 		call	FillTable
 
-		; initialize HOOKBE
+	IFDEF DOSHOOKS
+		; initialize DOS hooks
 		ld	hl,HOOKBE
 		ld	bc,$69c9		; b=$69 c=ret
 		call	FillTable
+	ENDIF
 
 		; initialize RSLREG subroutine
 		ld	hl,RSLREG

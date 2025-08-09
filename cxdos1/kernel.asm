@@ -98,6 +98,20 @@ DosBegin:
 		PHASE	DOSBASE
 
 ; ------------------------------------------------------------------------------
+; Macro: include/exclude call to DOS hook
+; ------------------------------------------------------------------------------
+
+	IFDEF DOSHOOKS
+		MACRO	DOSHOOK	H
+		call	H
+		ENDM
+	ELSE
+		MACRO	DOSHOOK	H
+		; call	H
+		ENDM
+	ENDIF
+
+; ------------------------------------------------------------------------------
 ; *** Kernel functions ***
 ; ------------------------------------------------------------------------------
 
@@ -402,7 +416,7 @@ CompareName:	ld	a,(de)
 		ret
 
 ; Subroutine check if devicename
-ValDevName:	call	H_DEVN
+ValDevName:	DOSHOOK	H_DEVN
 		ld	hl,IONAME		; table with devicenames
 		ld	c,5			; 5 devices
 _devnam1:	ld	b,4			; check 4 bytes (device names are 4 chars long)
@@ -461,7 +475,7 @@ FindFirst:	call	ValDevName		; is device name?
 		call	ResetDir		; reset direntry search and get latest FAT
 
 ; Subroutine find next directory entry
-FindNext:	call	H_CONT
+FindNext:	DOSHOOK	H_CONT
 		call	FirstNextDir		; get next direntry
 		ret	c			; no more, quit
 _find1:		ld	a,(hl)
@@ -534,7 +548,7 @@ _firstnext1:	call	LastEntry		; last direntry?
 		jr	nc,UpdateDir		; nc=yes, update directory of disk when needed and quit
 
 ; Subroutine get direntry
-GetDir:		call	H_GETE
+GetDir:		DOSHOOK	H_GETE
 	IFDEF MAXENT
 		; HL = directory entry number
 		ld	(LASTEN16),hl
@@ -577,7 +591,7 @@ _getdir2:	push	hl
 		ret
 
 ; Subroutine get next direntry (while searching)
-NextDir:	call	H_NEXT
+NextDir:	DOSHOOK	H_NEXT
 	IFDEF MAXENT
 		call	LastEntry		; last direntry ?
 		jr	nc,UpdateDir		; nc=yes, update directory of disk when needed and quit
@@ -701,7 +715,7 @@ _rename6:	ld	a,$ff			; error
 		ret
 
 ; Subroutine validate FCB drive and filename
-ValPath:	call	H_MOVN
+ValPath:	DOSHOOK	H_MOVN
 		xor	a
 		ld	(CREATI),a		; do not include special file attributes
 		ex	de,hl
@@ -763,7 +777,7 @@ DOS_OPEN:	call	ValFCB			; validate FCB, clear S2 and find directory entry
 		inc	b			; ?? correct for large files (filesize > 4177919 where extend is $ff)
 		cp	b			; is extent of file big enough ?
 		jr	nc,_rename6		; nc=no, quit with error
-_open1:		call	H_DOOP
+_open1:		DOSHOOK	H_DOOP
 		ex	de,hl
 		ld	bc,$000f
 		add	hl,bc
@@ -837,7 +851,7 @@ ResetDir:	ld	a,$ff			; MAXENT: no change required
 		ld	(ENTFRE),a		; not found a free direntry
 
 ; Subroutine get latest FAT
-GetFatSec:	call	H_FATR
+GetFatSec:	DOSHOOK	H_FATR
 		call	GetDPBAdr		; get pointer to DPB of current drive
 		ld	a,(THISDR)		; current driveid
 		ld	c,(ix+1)		; mediadesciptor
@@ -898,7 +912,7 @@ SetDPBAdr:	push	hl
 
 ; Subroutine get pointer to DPB of current drive
 ; Output: hl,ix = pointer to DPB
-GetDPBAdr:	call	H_GETI
+GetDPBAdr:	DOSHOOK	H_GETI
 		call	GetDPBTBL		; get DPBTBL entry of current drive
 		ld	a,(hl)
 		inc	hl
@@ -982,7 +996,7 @@ FlushFatBuf:	ld	l,(ix+19)
 		ret	nz			; nz=no, quit (?? return error if FAT buffer invalid)
 
 ; Subroutine write FAT buffer
-WriteFatBuf:	call	H_FATW
+WriteFatBuf:	DOSHOOK	H_FATW
 		call	NewUpdateFAT
 		xor	a
 		ret
@@ -1139,7 +1153,7 @@ DOS_ABSREA:	ld	b,h
 		ld	hl,(DMAADD)		; transferaddress
 
 ; Subroutine read sectors with DOS error handling
-DiskReadSec:	call	H_DREA
+DiskReadSec:	DOSHOOK	H_DREA
 		xor	a
 		ld	(READOP),a		; flag read disk operation
 		call	_readsec		; read sector
@@ -1187,7 +1201,7 @@ RestartSec:	push	af
 		ld	a,(ix+0)		; driveid
 
 ;Subroutine start diskerror handler
-DiskError:	call	H_FATA
+DiskError:	DOSHOOK	H_FATA
 		push	bc
 		push	de
 		push	hl
@@ -1232,14 +1246,14 @@ FlushDirBuf:	ld	a,(DIRTYD)
 		ret	z			; z=no, quit
 
 ; Subroutine write dirsector buffer
-WriteDirSec:	call	H_DIRW
+WriteDirSec:	DOSHOOK	H_DIRW
 		xor	a
 		ld	(DIRTYD),a		; directory buffer clean
 		ld	a,(DIRBFI)		; current dirsector (offset)
 		call	GetDirParam		; setup dirsector parameters
 
 ; Subroutine write sectors with DOS error handling
-DiskWriteSec:	call	H_DWRI
+DiskWriteSec:	DOSHOOK	H_DWRI
 		ld	a,1
 		ld	(READOP),a		; flag write disk operation
 		ld	a,(ix+0)		; driveid
@@ -1515,7 +1529,7 @@ _zwrite14:	ld	(CLUSNU),bc		; relative cluster of startbyte
 		ret
 
 ; Subroutine multiply
-DosMultiply:	call	H_MUL1
+DosMultiply:	DOSHOOK	H_MUL1
 		ld	hl,0
 
 ; Subroutine multiply high word
@@ -1537,7 +1551,7 @@ _multiply3:	rra
 DIV16:		ld	hl,0
 
 ; Subroutine divide
-Divide:		call	H_DIV3
+Divide:		DOSHOOK	H_DIV3
 		ld	a,b
 		ld	b,$10
 		rl	c
@@ -1589,7 +1603,7 @@ _partsec1:	ld	(BYTCT1),de		; bytes to transfer from partial sector
 		ret
 
 ; Subroutine get absolute cluster
-GetAbsClus:	call	H_FNDC
+GetAbsClus:	DOSHOOK	H_FNDC
 		ld	l,(iy+28)
 		ld	h,(iy+29)		; current cluster of file
 		ld	e,(iy+30)
@@ -1611,7 +1625,7 @@ GetAbsClus:	call	H_FNDC
 		ld	h,(iy+27)	 	; start cluster of file
 		push	af
 _absclus1:	pop	af
-_absclus2:	call	H_SKPC
+_absclus2:	DOSHOOK	H_SKPC
 		ld	a,b
 		or	c
 		ret	z
@@ -1682,7 +1696,7 @@ _rdatasec3:	ld	a,1
 
 ; Subroutine do partial sector read if needed
 
-ReadPartSec:	call	H_BUFR
+ReadPartSec:	DOSHOOK	H_BUFR
 		ld	hl,(BYTCT1)
 		ld	a,h
 		or	l			; partial sector read?
@@ -1693,7 +1707,7 @@ ReadPartSec:	call	H_BUFR
 		ret				; "
 
 ; Subroutine handle partial sector write
-WritePartSec:	call	H_BUFW
+WritePartSec:	DOSHOOK	H_BUFW
 		ld	hl,(BYTCT1)
 		ld	a,h
 		or	l			; partial start ?
@@ -1853,7 +1867,7 @@ ReadRecord:	call	_zwrite9		; initialize record info
 		jr	nc,_readrec1		; nc=no, go get it
 		ld	b,h
 		ld	c,l			; only read number of bytes until the end of file
-_readrec1:	call	H_ENUF
+_readrec1:	DOSHOOK	H_ENUF
 		call	CalcPartSec		; calculate partial sector transfers
 		ld	bc,(CLUSNU)		; relative cluster
 		call	GetAbsClus		; get absolute cluster
@@ -1923,7 +1937,7 @@ _readrec3:	pop	de
 
 _readrec4:	call	LastPartSec		; last partial sector ?
 		call	nc,ReadPartSec		; yes, do partial sector read if needed
-_readrec5:	call	H_SETF
+_readrec5:	DOSHOOK	H_SETF
 		ld	hl,(NEXTAD)		; current transferaddress (end)
 		ld	de,(DMAADD)		; transferaddress (begin)
 		or	a
@@ -1956,7 +1970,7 @@ _readrec8:	ld	hl,(RECCNT)		; number of records requested
 		jr	z,_readrec9		; all done,
 		inc	a
 		ld	(DSKERR),a		; error in record operation
-_readrec9:	call	H_SETC
+_readrec9:	DOSHOOK	H_SETC
 		ld	hl,(CLUSNU)
 		ld	(iy+28),l
 		ld	(iy+29),h		; current cluster of file FCB
@@ -2027,7 +2041,7 @@ _devwr5:	ld	c,e
 		call	ClusChainAlloc		; allocate cluster chain
 		jp	nc,_writerec5		; ok, go writing
 
-_devwr6:	call	H_WRTE
+_devwr6:	DOSHOOK	H_WRTE
 		xor	a
 		ld	c,a
 		ld	b,a			; no records read/write
@@ -2086,7 +2100,7 @@ _writerec3:	push	hl
 		or	l			; offset in sector
 		jr	z,_writerec4
 		inc	bc			; relative sector
-_writerec4:	call	H_NORN
+_writerec4:	DOSHOOK	H_NORN
 		ld	(VALSEC),bc		; relative sector behind fileend
 		ld	bc,(CLUSNU)		; relative cluster of startbyte
 		call	GetAbsClus		; get absolute cluster
@@ -2150,7 +2164,7 @@ _writerec7:	call	DiskWriteSec		; write datasectors with DOS error handling
 		ex	de,hl
 		jr	_writerec6		; again
 
-_writerec8:	call	H_WRTL
+_writerec8:	DOSHOOK	H_WRTL
 		call	LastPartSec		; last partial sector ?
 		call	nc,WritePartSec		; partial end, handle partial sector write
 		ld	hl,(NEXTAD)		; current transferaddress
@@ -2240,7 +2254,7 @@ _filesa6:	ld	l,(iy+26)
 		jr	_filesa5		; mark FAT buffer changed
 
 ; Subroutine calculate sequential sectors
-CalcSeqSec:	call	H_OPTI
+CalcSeqSec:	DOSHOOK	H_OPTI
 		ld	d,a
 		push	hl
 		inc	b
@@ -2327,7 +2341,7 @@ _calcs5:	add	a,b
 ; Input:  hl = cluster
 ;         a  = relative sector in cluster
 ; Output: hl = sectornumber
-ClusSecNum:	call	H_FIGR
+ClusSecNum:	DOSHOOK	H_FIGR
 		push	bc
 		ld	b,(ix+7)		; clustershift
 		dec	hl
@@ -2359,7 +2373,7 @@ GetRecNum:	push	de
 		ret
 
 ; Subroutine allocate cluster chain
-ClusChainAlloc:	call	H_ALLO
+ClusChainAlloc:	DOSHOOK	H_ALLO
 		ld	e,(ix+14)
 		ld	d,(ix+15)
 		ld	(MAXCLS),de
@@ -2440,7 +2454,7 @@ ClusFreeAlloc:	push	hl			; store cluster number
 ClusChainFree:	ld	bc,0			; FAT entry = free
 
 ; Subroutine set cluster entry and release rest of cluster chain
-ClusSetEntry:	call	H_RELB
+ClusSetEntry:	DOSHOOK	H_RELB
 		push	hl			; store cluster number
 		call	GETFAT			; get FAT entry content
 		ex	(sp),hl			; store next cluster number, restore cluster number
@@ -2602,6 +2616,11 @@ DOS_GETEFA:	xor	a
 		ld	c,h			; free cluster = 0
 		ld	e,(ix+14)
 		ld	d,(ix+15)
+	IFDEF FASTALLOC
+		; start with last cluster
+		ld	h,d
+		ld	l,e
+	ENDIF
 		dec	de			; number of clusters on disk
 		push	de
 _alloc1:	push	de
@@ -2611,12 +2630,19 @@ _alloc1:	push	de
 		pop	de
 		jr	nz,_alloc2
 		inc	bc			; free clusters + 1
+	IFDEF FASTALLOC
+		ld	a,b
+		and	$f8			; free clusters >= 2048? 
+		jr	nz,_alloc3		; nz=yes, cutoff count
+_alloc2:	dec	hl
+	ELSE
 _alloc2:	inc	hl
+	ENDIF
 		dec	de
 		ld	a,e
 		or	d
 		jr	nz,_alloc1		; next cluster
-		ld	h,b
+_alloc3:	ld	h,b
 		ld	l,c			; number of free clusters
 		pop	de			; number of clusters
 		ld	a,(ix+6)
@@ -2713,7 +2739,7 @@ _bufin1:	jr	z,_bufin3		; it is, use the line in buffer as basis
 _bufin2:	ld	e,d			; use empty line as basis
 
 ; line input main loop, also lineinput CTRL-F
-_bufin3:	call	H_GETC			; hook
+_bufin3:	DOSHOOK	H_GETC			; hook
 		call	DOS_IN
 _bufin4:	push	hl
 		push	bc
@@ -3118,7 +3144,7 @@ NKEYNT		equ	(TKEYNT-KeyTab)/3
 ; Console output
 ; ---------------------------------------------------------
 DOS_CONOUT:	ld	a,e
-DosConout:	call	H_OUT
+DosConout:	DOSHOOK	H_OUT
 		cp	HOME
 		jr	z,_conout2
 		cp	FF
@@ -3281,7 +3307,7 @@ _auxout1:	push	af
 ; No secret message
 
 ; Get date and time in directory format
-DirDateTime:	call	H_DATE
+DirDateTime:	DOSHOOK	H_DATE
 		call	GetTimeStamp		; get time and date values
 		ld	a,c
 		add	a,a
@@ -3370,7 +3396,7 @@ _timestamp4:	ex	de,hl
 _timestamp5:	add	hl,bc
 		ret
 
-_timestamp6:	call	H_SETY
+_timestamp6:	DOSHOOK	H_SETY
 		ld	(YEAR),a		; year (offset)
 _timestamp7:	and	$03
 		ld	a,28
@@ -3784,7 +3810,7 @@ FAT_read:	ld 	a,h
 		ld 	hl,(FATSWAP1)		; see FAT_write
 		ret
 
-NewGetFAT:	call	H_UNPA
+NewGetFAT:	DOSHOOK	H_UNPA
 		call	FAT_Swapper
 		ld	a,(ix+15)
 		cp	$10
@@ -3884,7 +3910,7 @@ r572:		pop	bc
 		pop	hl
 		ret
 
-DiskReadSect:	call	H_DREA			; read sector hook
+DiskReadSect:	DOSHOOK	H_DREA			; read sector hook
 		ld	a,(ix+0)
 		ld	c,(ix+1)
 		jp	ReadSector
@@ -3994,8 +4020,6 @@ r001:		ld	a,(THISDR)		; Current driveid
 
 ; ------------------------------------------------------------------------------
 ; FAT16 routines
-; The FAT16 partition boot sector disk parameters should have the directory
-; entries setting to an 8-bit value e.g. $E0 or $70 (maximum is $FF)!
 ; ------------------------------------------------------------------------------
 
 ; ------------------------------------------

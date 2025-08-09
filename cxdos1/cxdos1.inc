@@ -13,7 +13,10 @@
 ; ------------------------------------------------------------------------------
 
 ;DEBUG		equ	$01		; Include debug information / integrity checks
+;DOSHOOKS	equ	$01		; Include DOS hooks
 MAXENT		equ	$01		; Use 16-bit maximum directory entries value (FAT16)
+FASTALLOC	equ	$01		; Cutoff free disk space count at 2048 free clusters
+
 
 TBASE		equ	$0100		; Start of TPA
 BOT32K		equ	$8000		; Bottom of 32 KB RAM
@@ -126,7 +129,9 @@ MONTH		equ	$F249		; current month (1..12)
 YEAR		equ	$F24A		; current year (offset to 1980)
 DAYCNT		equ	$F24C		; current days since 1-1-1980
 WEEKDA		equ	$F24E		; current day of week (0=sunday)
-HOOKBE		equ	$F24F		;
+
+IFDEF DOSHOOKS ; 35 hooks, 105 bytes
+HOOKBE		equ	$F24F		; hooks begin: not used except for hooks init
 H_UNPA		equ	$F252		; get fat entry content hook
 H_DEVN		equ	$F255		; check if devicename hook
 H_CONT		equ	$F258		; try next direntry hook
@@ -161,6 +166,8 @@ H_GETC		equ	$F2AC		; lineinput headloop hook
 H_OUT 		equ	$F2AF		; console output hook
 H_DATE		equ	$F2B2		; get time and date for direntry hook
 H_SETY		equ	$F2B5		; setup days in februari hook
+ENDIF
+
 LASTEN		equ	$F2B8		; current direntry number
 NAME1		equ	$F2B9		; filename1
 ATTRIB		equ	$F2C4		; original DR byte FCB
