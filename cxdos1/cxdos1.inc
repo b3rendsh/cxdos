@@ -12,21 +12,28 @@
 ; CXDOS definitions
 ; ------------------------------------------------------------------------------
 
-;DEBUG		equ	$01		; Include debug information / integrity checks
+DEBUG		equ	$01		; Include debug information / integrity checks
 ;DOSHOOKS	equ	$01		; Include DOS hooks
 MAXENT		equ	$01		; Use 16-bit maximum directory entries value (FAT16)
 FASTALLOC	equ	$01		; Cutoff free disk space count at 2048 free clusters
 
+; Maximum size of kernel code with default build options (actual DosSize is in cxdos1.map)
+	IFDEF JIO
+DOSMAX		equ	$1F70		
+	ELSE
+DOSMAX		equ	$1C70		
+	ENDIF
+	
+SYSMAX		equ	$390		; Maximum size of msxdos.sys code
+KNLSIZE		equ	DOSMAX+SYSMAX
+
+SYSBASE		equ	$E500-KNLSIZE	; msxdos.sys base address (256-byte page boundary, above TMPSTK)
 
 TBASE		equ	$0100		; Start of TPA
 BOT32K		equ	$8000		; Bottom of 32 KB RAM
 BOT16K		equ	$C000		; Bottom of 16 KB RAM
 TMPSTK		equ	BOT16K+256	; Temporary stack
-
-SYSBASE		equ	$C100		; msxdos.sys base address (256-byte page boundary, above TMPSTK)
-SYSMAX		equ	$4A0		; Maximum size of msxdos.sys code
 DOSBASE		equ	SYSBASE+SYSMAX	; Kernel base address
-DOSMAX		equ	$1F60		; Maximum size of kernel code
 DOSFREE		equ	DOSBASE+DOSMAX	; Bottom of free variable memory for DOS (256-byte boundary)
 
 ; CXDOS
@@ -37,12 +44,12 @@ MYWORK		equ	$F1D3		; pointer to driver workarea
 SP_IRQ		equ	$F1D5		; temporary save stackpointer (KEYINT)
 IRQ_ST		equ	$F1D7		; pointer to temporary stack (KEYINT)
 SS_TEMP		equ	$F1DC		; Temporary secondary slot value
-F16HISEC	equ	$F1DD		; FAT16 32-bit sector number bit 16..31 (only bit 16..23 used) (old: 0xFD0F)
-F16LOSEC	equ	$F1DF		; FAT16 32-bit sector number bit 0..15 (old: 0xFD0D)
+F16LOSEC	equ	$F1DD		; FAT16 32-bit sector number bit 0..15 (old: 0xFD0D)
+F16HISEC	equ	$F1DF		; FAT16 32-bit sector number bit 16..31 (old: 0xFD0F)
 FATSWAP1	equ	$F1ED		; FAT swap value (old: 0xFD09)
 FATSWAP2	equ	$F1EF		; FAT swap current drive flag (old: 0xFFD9)
 FATSWAP3	equ	$F1F0		; FAT swap block number in buffer (old: 0xFFDA)
-FATSWAP4	equ	$F1F2		; FAT swap common buffer indicator (old: 0xFFDB)
+FATSWAP4	equ	$F1F1		; FAT swap common buffer indicator (old: 0xFFDB)
 
 ; MSX-DOS 2
 PUT_P1		equ	$F21E		; PUT_P1 handler
@@ -52,10 +59,10 @@ CODE_S		equ	$F2D0		; BDOS code segment
 DOSVER		equ	$F313	  	; DOS version
 
 ; BASIC
-ENDBUF		equ	$F660		; The BASIC screen buffer (258 bytes) is re-used for the DOS interrupt stack
+ENDBUF		equ	$F660		; The BASIC screen editor buffer (258 bytes) is re-used for the DOS interrupt stack
 
 ; Potential re-usable BASIC work area:
-; F55D to F87E = 820 bytes
+; F55D to F87E = 820 bytes (F661 is used in CHPUT)
 ; F92A to FAF4 = 459 bytes
 
 ; ----------------------------------------------
@@ -130,7 +137,7 @@ YEAR		equ	$F24A		; current year (offset to 1980)
 DAYCNT		equ	$F24C		; current days since 1-1-1980
 WEEKDA		equ	$F24E		; current day of week (0=sunday)
 
-IFDEF DOSHOOKS ; 35 hooks, 105 bytes
+	IFDEF DOSHOOKS ; 35 hooks, 105 bytes
 HOOKBE		equ	$F24F		; hooks begin: not used except for hooks init
 H_UNPA		equ	$F252		; get fat entry content hook
 H_DEVN		equ	$F255		; check if devicename hook
@@ -166,7 +173,7 @@ H_GETC		equ	$F2AC		; lineinput headloop hook
 H_OUT 		equ	$F2AF		; console output hook
 H_DATE		equ	$F2B2		; get time and date for direntry hook
 H_SETY		equ	$F2B5		; setup days in februari hook
-ENDIF
+	ENDIF
 
 LASTEN		equ	$F2B8		; current direntry number
 NAME1		equ	$F2B9		; filename1

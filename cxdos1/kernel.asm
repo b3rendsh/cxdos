@@ -329,8 +329,25 @@ DOS_CPMVER:	ld	b,$00			; machinetype 8080, plain CP/M
 ;         zx set if entry is free
 GETFAT:		ld	e,(ix+19)
 		ld	d,(ix+20)		; pointer to FAT buffer of drive
-		jp	NewGetFAT
-OldGetFAT:	push	de			; store pointer to FAT buffer of drive
+		
+		; NewGetFAT
+		DOSHOOK	H_UNPA
+		call	FAT_Swapper
+		ld	a,(ix+15)
+		cp	$10
+		jr	c,_getfat0
+		
+		; F16P03
+		add	hl,hl
+		add	hl,de
+		ld	a,(hl)
+		inc	hl
+		ld	h,(hl)
+		ld	l,a
+		or	h
+		ret
+
+_getfat0:	push	de			; store pointer to FAT buffer of drive
 		ld	e,l
 		ld	d,h			; cluster number
 		srl	h
@@ -363,8 +380,25 @@ _getfat1:	ld	l,a
 ; Input:  hl = clusternumber
 ;         de = pointer to FAT buffer
 ;         bc = clusterentry content
-PutFAT:		jp	F16P02
-OldPutFAT:	srl	h
+PutFAT:		; F16P02
+		push	de
+		ld	e,l
+		ld	d,h
+		ld	a,(ix+15)		; max clusters high byte
+		cp	$10			; > 12-bit?
+		jr	c,r1603			; c=no
+		add	hl,de
+		pop	de
+		add	hl,de
+		ld	(hl),c
+		inc	hl
+		ld	(hl),b
+		ret
+r1603:		ld	a,b
+		and	$0f
+		ld	b,a
+
+		srl	h
 		rr	l
 		rra
 		add	hl,de
@@ -881,8 +915,20 @@ _fatsec1:	sub	l			; current drive same as datasector buffer owner ?
 		ld	(BUFDRN),hl		; invalid datasector buffer
 _fatsec2:	ld	a,$ff
 		ld	(DIRBFD),a		; invalid dirsector buffer
-		jp	NewGetFATbuf
-
+		
+		; NewGetFATbuf
+		ld	a,(FATSWAP2)		; Drive of FAT buffer
+		cp	$ff			; bugfix, skip if FAT drive not set
+		jr	z,r001			; "
+		cp	(ix)			; Is current drive?
+		call	nz,SaveFATbuf
+r001:		ld	a,(THISDR)		; Current driveid
+		call	ReadFATbuf
+		ld	l,(ix+19)
+		ld	h,(ix+20)		; pointer to FAT buffer of drive
+		dec	hl
+		ld	(hl),0			; FAT buffer clean
+		
 ChangeDPB:	ld	b,(hl)			; mediabyte of FAT sector
 		ld	a,(THISDR)		; current driveid
 		ld	c,(ix+1)		; mediadescriptor
@@ -2114,7 +2160,7 @@ _writerec4:	DOSHOOK	H_NORN
 		jr	z,_writerec5		; z=yes
 		ld	a,b
 		or	c			; is cluster of startbyte found ?
-		jp	z,_devwr5			; z=yes, make chain to cluster of endbyte if needed and start writing
+		jp	z,_devwr5		; z=yes, make chain to cluster of endbyte if needed and start writing
 		push	bc
 		ld	c,e
 		ld	b,d			; clusters to allocate
@@ -2146,7 +2192,16 @@ _writerec6:	push	bc
 		push	bc
 		push	af
 		ld	b,a
-		call	F16P07
+		
+		; F16P07
+		jr	nc,r1607
+		ld	a,d
+		and	e
+		inc	a
+		jr	nz,_writerec7
+r1607:		ld	a,$ff
+		ld	(BUFDRN),a		; driveid of sector in directory buffer
+		
 _writerec7:	call	DiskWriteSec		; write datasectors with DOS error handling
 		pop	af
 		pop	de
@@ -2346,16 +2401,26 @@ ClusSecNum:	DOSHOOK	H_FIGR
 		ld	b,(ix+7)		; clustershift
 		dec	hl
 		dec	hl
-		jp	F16P05
-_clusn1:	sla	l
-		rl	h
-		djnz	_clusn1
-_clusn2:	or	l
+		
+		; F16P05
+		ld	c,$00
+		dec	b
+		jr	z,r1605
+r1604:		add	hl,hl
+		rl	c
+		djnz	r1604
+r1605:		or	l
 		ld	l,a
+		ld	a,c
 		ld	c,(ix+12)
 		ld	b,(ix+13)
-		add	hl,bc			; + first datasector
+		add	hl,bc
+		adc	a,$00
 		pop	bc
+		ret	z
+		ld	(F16LOSEC),hl		; store 24-bit sector number bit 0..15
+		ld	(F16HISEC),a		; store 24-bit sector number bit 16..23
+		ld	hl,$ffff		; indicator to use 24-bit sector number in DSKIO routine
 		ret
 
 ; Subroutine get recordnumber from S2,EX and CR fields
@@ -2474,7 +2539,11 @@ ClusSetEntry:	DOSHOOK	H_RELB
 ; Function $11 SFIRST
 ; Search for first entry (fcb)
 ; ---------------------------------------------------------
-DOS_SRCHFR:	call	ValFCB			; validate FCB, clear S2 and find direntry
+DOS_SRCHFR:
+	IF 1	; see sys module
+		ld	(SRCHFC),de		; store pointer to FCB
+	ENDIF
+		call	ValFCB			; validate FCB, clear S2 and find direntry
 _sfirst1:	jr	c,_sfirst5		; error, quit
 	IFDEF MAXENT
 		ld	de,(LASTEN16)
@@ -2524,7 +2593,11 @@ _sfirst5:	ld	a,$ff
 ; Function $12 SNEXT
 ; Search for next entry (fcb)
 ; ---------------------------------------------------------
-DOS_SRCHNX:	call	ValPath			; validate FCB drive and filename
+DOS_SRCHNX:
+	IF 1	; see sys module
+		ld	de,(SRCHFC)		; restore pointer to FCB
+	ENDIF
+		call	ValPath			; validate FCB drive and filename
 		jr	c,_sfirst5		; invalid,
 		ld	a,(SRCHLO)		; saved direntrynumber of last search first
 		cp	$ff
@@ -3810,13 +3883,6 @@ FAT_read:	ld 	a,h
 		ld 	hl,(FATSWAP1)		; see FAT_write
 		ret
 
-NewGetFAT:	DOSHOOK	H_UNPA
-		call	FAT_Swapper
-		ld	a,(ix+15)
-		cp	$10
-		jp	nc,F16P03
-		jp	OldGetFAT
-
 FAT_write:	ld	a,h
 		or	l
 		jr 	nz,NewPutFAT
@@ -3840,26 +3906,26 @@ FAT_Swapper:	push	hl
 		ret	nz			; No -> do no swapping
 		ld	a,(FATSWAP2)		; Is current's drive FAT buffered?
 		cp 	(ix+0)
-		jr	z,r569
+		jr	z,r568
 		call	SWAFAT			; if no -> swap immediately
-		jr	r570
+		jr	r569
 
-r569:		call	F16P04
+r568:		call	F16P04
 		push	hl
 		ld	hl,FATSWAP3
 		cp 	(hl)
 		pop	hl			; compare to block # in buffer
 		call	nz,SWAFAT 		; If no match -> swap FATS
-r570:		ld	a,(ix+15)
+r569:		ld	a,(ix+15)
 		cp	$10
 		ld	a,h
-		jr	nc,A746F
+		jr	nc,r570
 		and 	$03
 		ld	h,a			; mask FAT entry addres to block size
 		ret
 
-A746F:		sub	$03
-		jr	nc,A746F
+r570:		sub	$03
+		jr	nc,r570
 		add	a,$03
 		ld	h,a
 		ret
@@ -3891,7 +3957,13 @@ r571:		push	hl
 		push	de
 		push	bc
 		ld	b,3
-		call	DiskReadSect
+		
+		; DiskReadSect
+		DOSHOOK	H_DREA			; read sector hook
+		ld	a,(ix+0)
+		ld	c,(ix+1)
+		call	ReadSector
+		
 		pop	bc
 		pop	de
 		pop	hl
@@ -3910,11 +3982,6 @@ r572:		pop	bc
 		pop	hl
 		ret
 
-DiskReadSect:	DOSHOOK	H_DREA			; read sector hook
-		ld	a,(ix+0)
-		ld	c,(ix+1)
-		jp	ReadSector
-
 NewUpdateFAT:	push	de
 		ld	e,(ix+19)
 		ld	d,(ix+20)
@@ -3922,7 +3989,7 @@ NewUpdateFAT:	push	de
 		or	a
 		sbc	hl,de
 		pop	de
-		jp	nz,r574
+		jp	nz,UpdateFAT
 SaveFATbuf:	push	bc
 		push	de
 		push	ix
@@ -3980,7 +4047,7 @@ r575:		pop	ix
 		pop	bc
 		ret
 
-r574:		call	GetFATbuf
+UpdateFAT:	call	GetFATbuf
 r579:		push	af
 		push	ix
 		push	hl
@@ -4004,20 +4071,6 @@ r579:		push	af
 		jr	nz,r579
 		ret
 
-; ------------------------------------------
-NewGetFATbuf:	ld	a,(FATSWAP2)		; Drive of FAT buffer
-		cp	$ff			; bugfix, skip if FAT drive not set
-		jr	z,r001			; "
-		cp	(ix)			; Is current drive?
-		call	nz,SaveFATbuf
-r001:		ld	a,(THISDR)		; Current driveid
-		call	ReadFATbuf
-		ld	l,(ix+19)
-		ld	h,(ix+20)		; pointer to FAT buffer of drive
-		dec	hl
-		ld	(hl),0			; FAT buffer clean
-		jp	ChangeDPB
-
 ; ------------------------------------------------------------------------------
 ; FAT16 routines
 ; ------------------------------------------------------------------------------
@@ -4035,36 +4088,6 @@ r1601:		ret	c
 r1602:		ld	a,h
 		cp	$ff			; end cluster chain (FAT16)?
 		jr	r1601
-
-; ------------------------------------------
-F16P02:		push	de
-		ld	e,l
-		ld	d,h
-		ld	a,(ix+15)		; max clusters high byte
-		cp	$10			; > 12-bit?
-		jp	c,r1603			; c=no
-		add	hl,de
-		pop	de
-		add	hl,de
-		ld	(hl),c
-		inc	hl
-		ld	(hl),b
-		ret
-
-r1603:		ld	a,b
-		and	$0f
-		ld	b,a
-		jp	OldPutFAT
-
-; ------------------------------------------
-F16P03:		add	hl,hl
-		add	hl,de
-		ld	a,(hl)
-		inc	hl
-		ld	h,(hl)
-		ld	l,a
-		or	h
-		ret
 
 ; ------------------------------------------
 F16P04:		ld	a,(ix+15)		; max clusters high byte
@@ -4086,29 +4109,6 @@ A75B6:		inc	c
 		ret
 
 ; ------------------------------------------
-F16P05:		ld	c,$00
-		dec	b
-		jr	z,r1605
-r1604:		add	hl,hl
-		rl	c
-		djnz	r1604
-r1605:		or	l
-		ld	l,a
-		ld	a,c
-		ld	c,(ix+12)
-		ld	b,(ix+13)
-		add	hl,bc
-		adc	a,$00
-		pop	bc
-		ret	z
-		ld	(F16LOSEC),hl		; store 24-bit sector number bit 0..15
-		ld	l,a
-		ld	h,$00
-		ld	(F16HISEC),hl		; store 24-bit sector number bit 16..23
-		ld	hl,$ffff		; indicator to use 24-bit sector number in DSKIO routine
-		ret
-
-; ------------------------------------------
 F16P06:		ld	a,e
 		and	d
 		inc	a
@@ -4119,16 +4119,6 @@ F16P06:		ld	a,e
 		ret
 r1606:		inc	a
 		scf
-		ret
-
-; ------------------------------------------
-F16P07:		jr	nc,r1607
-		ld	a,d
-		and	e
-		inc	a
-		ret	nz
-r1607:		ld	a,$ff
-		ld	(BUFDRN),a		; driveid of sector in directory buffer
 		ret
 
 ; ------------------------------------------------------------------------------

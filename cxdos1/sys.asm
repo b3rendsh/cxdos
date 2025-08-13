@@ -59,11 +59,6 @@
 		EXTERN	DOS_SETTIM
 		EXTERN	DOS_SETRAW
 
-CPMCL   	MACRO   X,Y
-		DB	X
-		DW	Y
-		ENDM
-
 SysBegin:
 		PHASE	SYSBASE			; This must be at a 256 byte page boundary
 
@@ -84,7 +79,9 @@ CHECKSUM:	dw	-1			; word checksum
 BATCHFLAG:	db	0			; batch file running flag
 		db	0			; cold boot flag (not used)
 
+; Messages part 1 of 2
 ; Messages moved to unused space
+
 MsgTermBatch:	db	CR,LF
 		db	"Terminate batch file (Y/N)? "
 		db	"$"
@@ -103,37 +100,8 @@ MsgRead:	db	"read"
 
 MsgWrit:	db	"writ"
 
-MsgWrProtect:	db	CR,LF
-		db	"Write protect"
-		db	"$"
-
-MsgNotReady:	db	CR,LF
-		db	"Not ready"
-		db	"$"
-
-MsgMedia:	db	CR,LF
-		db	"Unsupported media type"
-		db	"$"
-
-MsgDisk:	db	CR,LF
-		db	"Disk"
-		db	"$"
-
-MsgError:	db	" error "
-MsgError1:	db	"reading drive "
-MsgError2:	db	"A"
-		db	CR,LF
-		db	"$"
-
-MsgAbort:	db	"Abort, Retry or Ignore? "
-		db	"$"
-
-DataSize:	db	0			; size of data structure
-DataVec:	dw	0			; pointer to data structure
-DataValue:	defs	128,0			; temporary data structure
 		defs	128,0			; space for stack (at least 128 bytes)
-
-		defs	SYSBASE+$200-$,0
+		defs	SYSBASE+$100-$,0
 
 ; ------------------------------------------------------------------------------
 ; BIOS jump table
@@ -211,6 +179,7 @@ DosRet:		xor	a
 
 ;------------------------------------------------------------------------------
 ; BDOS handler (jump from $0005)
+; Note: the handler doesn't buffer data structures in page 3
 ;------------------------------------------------------------------------------
 
 XBDOS:		ld	a,1
@@ -220,13 +189,18 @@ XBDOS:		ld	a,1
 		jr	nc,DosRet		; nc=no, quit with result = ok
 		ld	(SPSAVE),sp
 		ld	sp,SysBoot
+
+	IF 0	; store/restore pointer in the function itself
 		cp	$11			; search for first ?
 		jr	nz,xbdos1		; nz=no
 		ld	(SRCHFC),de		; store pointer to FCB
 xbdos1:		cp	$12			; search for next ?
 		jr	nz,xbdos2		; nz=no
 		ld	de,(SRCHFC)		; restore pointer to FCB
-xbdos2:		push	hl
+xbdos2:
+	ENDIF
+
+		push	hl
 		ld	hl,XBDOS_DONE
 		ex	(sp),hl
 		push	hl			; after this,
@@ -234,53 +208,16 @@ xbdos2:		push	hl
 		ld	b,0
 		add	hl,bc
 		add	hl,bc
-		add	hl,bc
-		ld	a,(hl)			; function with pointer to data
-		inc	hl
 		ld	b,(hl)
 		inc	hl
 		ld	h,(hl)
 		ld	l,b			; pointer to BDOS function
 		ex	(sp),hl			; BDOS function handler
-		ld	(DataSize),a		; store size of data structure
-		or	a			; function has a data structure ?
-		jr	z,xbdos4		; z=no, skip temporary data buffer
-		push	hl
-		ex	de,hl
-		ld	(DataVec),hl		; store pointer to data structure
-		ld	de,DataValue		; destination = temporary data structure
-		ld	b,0
-		ld	c,a
-		inc	a			; buffered console input ?
-		jr	nz,xbdos3		; nz=no
-		ld	a,(hl)
-		ld	c,a			; size of console input buffer
-		inc	bc
-		inc	bc			; include size and len bytes
-xbdos3:		ldir
-		pop	hl
-		ld	de,DataValue		; temporary data structure
-xbdos4:		ret
+		ret
 
 ; Returning point from BDOS function
 XBDOS_DONE:	push	af
-		ld	a,(DataSize)		; size of data structure
-		or	a			; function has a data structure ?
-		jr	z,xbdos6		; z=no, skip temporary data buffer
-		ld	c,a
-		ld	b,0
-		push	hl
-		ld	de,(DataVec)		; restore pointer to data structure
-		ld	hl,DataValue		; source = temporary data structure
-		inc	a			; buffered console input ?
-		jr	nz,xbdos5		; nz=no
-		ld	a,(de)
-		ld	c,a			; size of console input buffer
-		inc	bc
-		inc	bc			; include size and len bytes
-xbdos5:		ldir
-		pop	hl
-xbdos6:		ld	a,(CPMCAL)
+		ld	a,(CPMCAL)
 		or	a			; CP/M function ?
 		jr	z,xbdos7		; z=no, quit
 		pop	af
@@ -293,55 +230,55 @@ xbdos7:		pop	af
 		ld	sp,(SPSAVE)
 		ret
 
-FNTAB:		CPMCL	0,WBOOT			; 00
-		CPMCL	0,DOS_CONIN		; 01
-		CPMCL	0,DOS_CONOUT		; 02
-		CPMCL	0,DOS_READER		; 03
-		CPMCL	0,DOS_PUNCH		; 04
-		CPMCL	0,DOS_LIST		; 05
-		CPMCL	0,DOS_RAWIO		; 06
-		CPMCL	0,DOS_RAWINP		; 07
-		CPMCL	0,DOS_IN		; 08
-		CPMCL	0,SPRTBUF		; 09
-		CPMCL	-1,DOS_BUFIN		; 0A
-		CPMCL	0,DOS_CONSTA		; 0B
-		CPMCL	0,DOS_CPMVER		; 0C
-		CPMCL	0,DOS_DSKRES		; 0D
-		CPMCL	0,DOS_SELDSK		; 0E
-		CPMCL	32,DOS_OPEN		; 0F
-		CPMCL	32,DOS_CLOSE		; 10
-		CPMCL	15,DOS_SRCHFR		; 11
-		CPMCL	15,DOS_SRCHNX		; 12
-		CPMCL	32,DOS_DELETE		; 13
-		CPMCL	33,DOS_SEQRD		; 14
-		CPMCL	33,DOS_SEQWRT		; 15
-		CPMCL	32,DOS_CREATE		; 16
-		CPMCL	32,DOS_RENAME		; 17
-		CPMCL	0,DOS_LOGIN		; 18
-		CPMCL	0,DOS_GETDRV		; 19
-		CPMCL	0,DOS_SETDMA		; 1A
-		CPMCL	0,DOS_GETEFA		; 1B
-		CPMCL	0,DosRet		; 1C
-		CPMCL	0,DosRet		; 1D
-		CPMCL	0,DosRet		; 1E
-		CPMCL	0,DosRet		; 1F
-		CPMCL	0,DosRet		; 20
-		CPMCL	36,DOS_RNDRD		; 21
-		CPMCL	36,DOS_RNDWRT		; 22
-		CPMCL	36,DOS_FILESI		; 23
-		CPMCL	36,DOS_SETRND		; 24
-		CPMCL	0,DosRet		; 25
-		CPMCL	37,DOS_BLKWRT		; 26
-		CPMCL	37,DOS_BLKRD		; 27
-		CPMCL	36,DOS_ZWRITE		; 28
-		CPMCL	0,DosRet		; 29
-		CPMCL	0,DOS_GETDAT		; 2A
-		CPMCL	0,DOS_SETDAT		; 2B
-		CPMCL	0,DOS_GETTIM		; 2C
-		CPMCL	0,DOS_SETTIM		; 2D
-		CPMCL	0,DOS_SETRAW		; 2E
-		CPMCL	0,DOS_ABSREA		; 2F
-		CPMCL	0,DOS_ABSWRI		; 30
+FNTAB:		dw	WBOOT			; 00
+		dw	DOS_CONIN		; 01
+		dw	DOS_CONOUT		; 02
+		dw	DOS_READER		; 03
+		dw	DOS_PUNCH		; 04
+		dw	DOS_LIST		; 05
+		dw	DOS_RAWIO		; 06
+		dw	DOS_RAWINP		; 07
+		dw	DOS_IN			; 08
+		dw	SPRTBUF			; 09
+		dw	DOS_BUFIN		; 0A
+		dw	DOS_CONSTA		; 0B
+		dw	DOS_CPMVER		; 0C
+		dw	DOS_DSKRES		; 0D
+		dw	DOS_SELDSK		; 0E
+		dw	DOS_OPEN		; 0F
+		dw	DOS_CLOSE		; 10
+		dw	DOS_SRCHFR		; 11
+		dw	DOS_SRCHNX		; 12
+		dw	DOS_DELETE		; 13
+		dw	DOS_SEQRD		; 14
+		dw	DOS_SEQWRT		; 15
+		dw	DOS_CREATE		; 16
+		dw	DOS_RENAME		; 17
+		dw	DOS_LOGIN		; 18
+		dw	DOS_GETDRV		; 19
+		dw	DOS_SETDMA		; 1A
+		dw	DOS_GETEFA		; 1B
+		dw	DosRet			; 1C
+		dw	DosRet			; 1D
+		dw	DosRet			; 1E
+		dw	DosRet			; 1F
+		dw	DosRet			; 20
+		dw	DOS_RNDRD		; 21
+		dw	DOS_RNDWRT		; 22
+		dw	DOS_FILESI		; 23
+		dw	DOS_SETRND		; 24
+		dw	DosRet			; 25
+		dw	DOS_BLKWRT		; 26
+		dw	DOS_BLKRD		; 27
+		dw	DOS_ZWRITE		; 28
+		dw	DosRet			; 29
+		dw	DOS_GETDAT		; 2A
+		dw	DOS_SETDAT		; 2B
+		dw	DOS_GETTIM		; 2C
+		dw	DOS_SETTIM		; 2D
+		dw	DOS_SETRAW		; 2E
+		dw	DOS_ABSREA		; 2F
+		dw	DOS_ABSWRI		; 30
 
 ;------------------------------------------------------------------------------
 ; BIOS character I/O routines
@@ -351,8 +288,6 @@ FNTAB:		CPMCL	0,WBOOT			; 00
 ConStat:	ld	(SPSAVE),sp
 		ld	sp,SysBoot
 		call	DOS_SSBIOS		; check if keyboard input available
-		push	af			; store status
-		pop	af			; restore status
 		ld	sp,(SPSAVE)
 		ld	a,0
 		ret	z			; no keyboard input, return 0
@@ -470,6 +405,33 @@ CommandM:	db	0
 		db	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 		dw	0
 		dw	0
+
+; Messages part 2 of 2
+
+MsgWrProtect:	db	CR,LF
+		db	"Write protect"
+		db	"$"
+
+MsgNotReady:	db	CR,LF
+		db	"Not ready"
+		db	"$"
+
+MsgMedia:	db	CR,LF
+		db	"Unsupported media type"
+		db	"$"
+
+MsgDisk:	db	CR,LF
+		db	"Disk"
+		db	"$"
+
+MsgError:	db	" error "
+MsgError1:	db	"reading drive "
+MsgError2:	db	"A"
+		db	CR,LF
+		db	"$"
+
+MsgAbort:	db	"Abort, Retry or Ignore? "
+		db	"$"
 
 		DEPHASE
 

@@ -271,7 +271,7 @@ r002:		ld	(SNUMDR),a		; drives in system (only 1 interface supported)
 		ld	de,21
 	ENDIF
 		call	DosMultiply		; bc*de = drives * size of DPB
-		call	AllocMemBC		; reserve number of bytes for the DPBs
+		call	AllocMemBC		; reserve number of bytes for the DPBs (max 8 * 23 = 184)
 		ex	de,hl
 		pop	af
 		pop	hl
@@ -489,7 +489,7 @@ StartSys:	; load msxdos.sys code
 		; set error vectors
 		ld	hl,SYSBASE+$09
 		ld	(DISKVE),hl
-		ld	hl,SYSBASE+$0B
+		ld	hl,SYSBASE+$11
 		ld	(BREAKV),hl
 
 		; set cold boot flag
@@ -798,9 +798,9 @@ AF1D9:		ldir				; BLKMOV
 		ret
 
 AF1DC:		db	0			; SS_TEMP
-AF1DD:		dw	0			; F16HISEC
-AF1DF:		dw	0			; F16LOSEC
-AF1E1:		db	0			; reserved for variables
+AF1DD:		dw	0			; F16LOSEC
+AF1DF:		db	0			; F16HISEC
+AF1E0:		dw	0			; reserved for variables
 
 ; Subroutine Warm Boot (obsolete)
 AF1E2:	 	jp	WBOOT			; ENDJMP
@@ -817,8 +817,9 @@ AF1E8:   	ld	e,(hl)			; JPHL
 
 AF1ED:		dw	0			; FATSWAP1
 AF1EF:		db	$ff			; FATSWAP2 (initial value $ff)
-AF1F0:		dw	0			; FATSWAP3
-AF1F2:		dw	0			; FATSWAP4
+AF1F0:		db	0			; FATSWAP3
+AF1F1:		dw	0			; FATSWAP4
+AF1F3:		db	0			; reserved for variables
 
 ; Subroutine validate FCB filename (obsolete)
 ; Input:  HL = address of pointer

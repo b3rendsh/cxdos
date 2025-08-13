@@ -29,11 +29,11 @@ rdate:
 ppide1:	rdate
 	@echo Assembling CXDOS1 for BEER IDE..
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DDEBUG -DPPIDE -Oobj -o=beer_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DPPIDE -Oobj -o=beer_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/beer_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/beer_cxdos1__.bin bin$/CXDOS1B.COM
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DDEBUG -DBASBIN -DPPIDE -Oobj -o=beer_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DBASBIN -DPPIDE -Oobj -o=beer_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/beer_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/beer_cxdos1__.bin bin$/CXDOS1B.BIN
 	@echo done
