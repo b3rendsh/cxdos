@@ -60,6 +60,7 @@ jio1:	rdate
 	z80asm -b -d -l -m -DBASBIN -DJIO -Oobj -o=jio_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/jio_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/jio_cxdos1__.bin bin$/CXDOS1A.BIN
+	@echo done
 
 pio1:	rdate
 	@echo Assembling CXDOS1 for JIO LPT..
@@ -71,6 +72,7 @@ pio1:	rdate
 	z80asm -b -d -l -m -DBASBIN -DJIO -DLPTIO -Oobj -o=pio_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/pio_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/pio_cxdos1__.bin bin$/CXDOS1AP.BIN
+	@echo done
 	
 clean:
 	$(RMF) obj$(RMD)

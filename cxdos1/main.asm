@@ -65,7 +65,6 @@
 	ENDIF
 
 		; Defined by driver
-		EXTERN	INIHRD			; Initialize hardware
 		EXTERN	DRIVES			; Return number of drives in system
 		EXTERN	INIENV			; Initialize work area
 		EXTERN	OEMSTA			; Used for system expansion (OEMSTATEMENT)
@@ -130,11 +129,7 @@ IplBegin:
 
 ; Initial program loader, CXDOS is the one (master) disk system
 
-StartIpl:
-		; enable RAM on page 1
-		ld	a,(RAMAD1)
-		ld	h,$40
-		call	ENASLT
+StartIpl:	di
 
 		; disable IRQ routine in MSX-DOS 2 code segment
 		ld	a,(DRVTBL)
@@ -412,12 +407,17 @@ r005:	  	ld	e,(hl)
 		; DOS memory requirements are met, try starting it
 		xor	a			; drive 0
 		call	DosInvalidFbuf		; invalidate FAT buffer of the drive
+		ld	a,$EB
 		ld	(DOSFLG),a		; flag bootable disk
 
-		; Set page 0 to RAM and initialize scratch area
+		; Set page 0 and 1 to RAM and initialize scratch area
+		; interrupts are disabled by PH_ENASLT routine
 		ld	a,(RAMAD0)
 		ld	h,$00
-		call	PH_ENASLT		; (this routine will disable interrupts)
+		call	PH_ENASLT
+		ld	a,(RAMAD1)
+		ld	h,$40
+		call	PH_ENASLT
 
 		; clear scratch area
 		xor	a
@@ -497,11 +497,6 @@ StartSys:	; load msxdos.sys code
 		ld	a,(hl)
 		ld	(hl),h			; next time not a cold boot
 		ld	(SYSBASE+$1a),a		; initialize cold boot flag
-
-		; set page 1 to ram (DOSOF)
-		ld	a,(RAMAD1)
-		ld	h,$40
-		call	ENASLT
 
 		; cold boot CXDOS
 		jp	SysBoot

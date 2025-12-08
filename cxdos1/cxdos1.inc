@@ -188,9 +188,9 @@ PREREA		equ	$F2E0		; flag flake read (0 means real read)
 THISDR		equ	$F2E1		; current driveid
 NEXTAD		equ	$F2E2		; transfer address for record operation
 RECPOS		equ	$F2E4		; start record (32 bit) for recordoperation
-RECCNT		equ	$F2E8		; number of records for recordoperation (DOS1)
-LASTPO		equ	$F2EA		; current relative cluster of file (DOS1)
-CLUSNU		equ	$F2EC		; current cluster of file (DOS1)
+RECCNT		equ	$F2E8		; number of records for record operation
+LASTPO		equ	$F2EA		; current relative cluster of file
+CLUSNU		equ	$F2EC		; current cluster of file
 SECPOS		equ	$F2EE		; start relative sector for recordoperation
 VALSEC		equ	$F2F0		; relative cluster after fileend for write recordoperation
 BYTSEC		equ	$F2F2		; start offset in sector for recordoperation
