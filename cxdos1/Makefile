@@ -74,6 +74,19 @@ pio1:	rdate
 	$(CP) obj$/pio_cxdos1__.bin bin$/CXDOS1AP.BIN
 	@echo done
 	
+uart1:	rdate
+	@echo Assembling CXDOS1 for JIO UART..
+	$(RMF) obj$(RMD)
+	z80asm -b -d -l -m -DJIO -DUART -Oobj -o=uart_cxdos1 $(SOURCES1)
+	z88dk-appmake +glue -b obj/uart_cxdos1 --filler 0xFF --clean
+	$(CP) obj$/uart_cxdos1__.bin bin$/CXDOS1AU.COM
+	$(RMF) obj$(RMD)
+	z80asm -b -d -l -m -DBASBIN -DJIO -DUART -Oobj -o=uart_cxdos1 $(SOURCES1)
+	z88dk-appmake +glue -b obj/uart_cxdos1 --filler 0xFF --clean
+	$(CP) obj$/uart_cxdos1__.bin bin$/CXDOS1AU.BIN
+	@echo done
+	
+	
 clean:
 	$(RMF) obj$(RMD)
 	$(RMF) rdate.inc
