@@ -33,10 +33,19 @@ The .com files can be started from the MSX-DOS command prompt.
 
 ## CXDOS 2
 
-**Under construction**  
+**Demo only**  
 DOS for MSX1 and newer machines with limited ROM or RAM resources, the kernel functions are compatible with MSX-DOS 2.
 A demo version is built that will run on a MSX1 with 32K disk ROM and 64K system RAM.
 
+## Contributions
+Please create an issue if you want to report a bug or have any requests or suggestions. Pull requests from forks are currently not supported.
+
+This is a low priority experimental project and it may take a while before requests are reviewed and/or implemented.
+
 ## License
-The license terms apply to all material, with the exception of code that is based on existing work by others that is shared publicly and re-used widely without mentioning specific license terms or restrictions. The origins of these parts are mentioned in the source code and it's copyright is respected when applicable.
+The Creative Commons license terms apply to all material, with the exception of code that is based on existing work by others. The origins of these parts are mentioned in the source code. It is believed that these works are being used in accordance with the intentions and/or licensing of their creators. 
+
+The material is shared here for educational and non commercial purposes only. It is provided freely and "as it is" in the hope that it will be useful, but without any warranty of any kind, either expressed or implied. Use at own risk!
+
+
 
