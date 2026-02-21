@@ -535,12 +535,16 @@ ideError:	ld	a,IDE_SET+REG_ERROR
 ; PPI IDE read status register
 ; ------------------------------------------
 ppideStatus:	ld	a,IDE_SET+REG_STATUS
-ppideReadReg:	out	(PPI_IOC),a
-		res	7,a			; /rd=0
-		out	(PPI_IOC),a
-		set	7,a
-		out	(PPI_IOC),a		; /rd=1
+ppideReadReg:	push	bc
+		ld	b,a
+		ld	c,PPI_IOC
+		out	(c),b
+		res	7,b			; /rd=0 (assert read)
+		out	(c),b
 		in	a,(PPI_IOA)		; read register
+		set	7,b			; /rd=1 (deassert read)
+		out	(c),b
+		pop	bc
 		ret
 
 ; ------------------------------------------
@@ -567,10 +571,10 @@ ppideSetReg:	ld	a,IDE_SET
 		out 	(PPI_IOA),a		; write value
 		ld 	a,IDE_WRITE
 		add	a,h
-		out 	(PPI_IOC),a		; /wr=0
+		out 	(PPI_IOC),a		; /wr=0 (assert write)
 		ld	a,IDE_SET
 		add	a,h
-		out 	(PPI_IOC),a		; /wr=1
+		out 	(PPI_IOC),a		; /wr=1 (deassert write)
 		ret 
 
 ; ------------------------------------------
