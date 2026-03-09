@@ -2,12 +2,14 @@
 ; cxdos1.inc
 ; CXDOS / MSX constants and definitions
 ;
-; (C) 2025 All rights reserved.
+; (C) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		DEFINE	CXDOS1		; prevent double declarations
 		DEFINE	FAT16DOS1	; include FAT16
 		DEFINE	IDEDOS1		; include DOS 1 enhancements
+		DEFINE	JIOCART		; include JIOCART support
+		DEFINE	BEER_CS		; BEER IDE low level driver optimized control signals
 
 ; CXDOS definitions
 ; ------------------------------------------------------------------------------
@@ -16,6 +18,7 @@ DEBUG		equ	$01		; Include debug information / integrity checks
 ;DOSHOOKS	equ	$01		; Include DOS hooks
 MAXENT		equ	$01		; Use 16-bit maximum directory entries value (FAT16)
 FASTALLOC	equ	$01		; Cutoff free disk space count at 2048 free clusters
+JIOPORT		equ	$FF		; autodetect
 
 ; Maximum size of kernel code with default build options (actual DosSize is in cxdos1.map)
 	IFDEF JIO

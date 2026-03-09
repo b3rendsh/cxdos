@@ -2,7 +2,7 @@
 ; cs1_sys.asm
 ; System routines code segment 1.
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION	CS1_SYS
@@ -360,7 +360,7 @@ sysPrintCRLF:	ld	a,CR
 
 		SECTION CS1_DRV
 		DEFINE	DRV_IPL
-	IF PPIDE || CFIDE
+	IF BEER || SODA
 		INCLUDE	"../driver/driver.asm"
 	ELIF JIO
 		INCLUDE	"../driver/drv_jio.asm"

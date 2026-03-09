@@ -2,7 +2,7 @@
 ; cs0_fhs.asm
 ; Disk functions msxdos 2 (fhs)
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION	CS0_FHS

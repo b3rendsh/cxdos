@@ -9,7 +9,7 @@
 ; + CP/M 2.2 design principles by Digital Research
 ; + Commented source code in msxsysrc repository by Arjen Zeilemaker
 ;
-; (C) 2025 All rights reserved.
+; (C) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 ; CXDOS is compatible with all kernel functions of MSX-DOS 1, excluding:
 ; - Disk BASIC (CXDOS works without BASIC ROM)
@@ -91,9 +91,9 @@
 
 		; identification
 		db	CR,LF,"MSX CXDOS V1.0",CR,LF
-	IFDEF PPIDE
+	IFDEF BEER
 		db	"for BEER interface",CR,LF
-	ELIFDEF CFIDE
+	ELIFDEF SODA
 		db	"for SODA interface",CR,LF
 	ELIFDEF	JIO
 		db	"for JIO interface",CR,LF
@@ -734,7 +734,7 @@ X004E:  	ld	(AFFFF),a
 ; ------------------------------------------------------------------------------
 
 		DEFINE	DRV_IPL
-	IF PPIDE || CFIDE
+	IF BEER || SODA
 		INCLUDE	"../driver/driver.asm"
 	ELIF JIO
 		INCLUDE	"../driver/drv_jio.asm"

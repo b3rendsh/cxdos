@@ -2,7 +2,7 @@
 ; cs1_pag.asm
 ; Paging helper routines and static variables in RAM page 3.
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION CS1_PAG

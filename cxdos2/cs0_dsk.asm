@@ -2,7 +2,7 @@
 ; cs0_dsk.asm
 ; Common disk subroutines
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION	CS0_DSK

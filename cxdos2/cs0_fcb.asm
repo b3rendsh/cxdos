@@ -2,7 +2,7 @@
 ; cs0_fc.asm
 ; Disk functions (fcb).
 ; 
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION	CS0_FCB

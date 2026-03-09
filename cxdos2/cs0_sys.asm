@@ -2,7 +2,7 @@
 ; cs0_sys.asm
 ; Main entry point, BDOS kernel handler and system routines.
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		; Code segment 0
@@ -1108,7 +1108,7 @@ sysFarDos:	push	iy
 
 		SECTION CS0_DRV
 		DEFINE	DRV_SYS
-	IF PPIDE || CFIDE
+	IF BEER || SODA
 		INCLUDE	"../driver/driver.asm"
 		INCLUDE	"../driver/drv_ide.asm"
 	ELIF JIO

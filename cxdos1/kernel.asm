@@ -2,7 +2,7 @@
 ; kernel.asm
 ; CXDOS 1 kernel functions
 ;
-; (C) 2025 All rights reserved.
+; (C) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		INCLUDE	"cxdos1.inc"
@@ -4433,7 +4433,7 @@ LastEntry:	push	hl
 ; Include ram resident part of disk interface driver
 
 		DEFINE	DRV_SYS
-	IF PPIDE || CFIDE
+	IF BEER || SODA
 		INCLUDE	"../driver/driver.asm"
 		INCLUDE	"../driver/drv_ide.asm"
 	ELIF JIO

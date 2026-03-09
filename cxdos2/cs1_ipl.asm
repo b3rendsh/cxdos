@@ -2,7 +2,7 @@
 ; cs1_ipl.asm
 ; Initialization routines.
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION CS1_IPL
@@ -60,7 +60,7 @@
 		EXTERN	DRIVES
 		EXTERN	INIENV
 		EXTERN	MYSIZE
-	IF PPIDE || CFIDE
+	IF BEER || SODA
 		EXTERN	BOOTMENU
 	ENDIF
 
@@ -474,7 +474,7 @@ r008:		call	DisableDosP1		; disable DOS page 1 support
 		call    GetBootLoader		; search for first drive with valid boot loader
 		call	nz,StartBootLdr		; nz=found, execute boot loader with Cx=0
 
-	IF CFIDE || PPIDE
+	IF BEER || SODA
 		call	BOOTMENU		; boot menu which sets current drive
 		jp	c,iplDiskBasic		; if c-flag is set then start DiskBASIC
 	ELSE

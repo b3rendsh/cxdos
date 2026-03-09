@@ -2,7 +2,7 @@
 ; cs1_tim.asm
 ; Time and date functions.
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION	CS1_TIM

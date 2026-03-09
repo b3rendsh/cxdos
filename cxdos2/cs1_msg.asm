@@ -2,7 +2,7 @@
 ; cs1_msg.asm
 ; DOS system and error messages.
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION	CS1_MSG

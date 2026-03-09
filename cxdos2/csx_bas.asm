@@ -2,7 +2,7 @@
 ; csx_bas.asm
 ; Disk BASIC.
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 ; Sections:
@@ -444,7 +444,7 @@ BAS_NOFO:	ei
 		call	CheckChar
 		db	$ef			; = token
 		ld	ix,INTID2
-		call	CallBasic
+		call	CallBasic		; evaluate word operand and check for 0-32767 range
 		dec	de
 		inc	d
 		dec	d			; 0 or > 256 ?
@@ -456,6 +456,7 @@ BAS_NOFO:	ei
 
 ; ---------------------------------------------------------
 ; Hook NULO: open i/o channel
+; Input:  HL = i/o channel pointer
 ; ---------------------------------------------------------
 BAS_NULO:	ei
 		ret	nc			; nc=not a disk device, quit
@@ -480,9 +481,9 @@ BAS_NULO:	ei
 		push	af			; store i/o channel mode
 		and	$82			; i/o channel mode binary save or sequential output ?
 		jr	z,_nulo3		; z=no,
-_nulo1:		XOR	A			; open mode = normal
-		LD	B,A			; attributes = default
-		LD	C,FCREATE		; create file handle
+_nulo1:		xor	a			; open mode = normal
+		ld	b,a			; attributes = default
+		ld	c,FCREATE		; create file handle
 		call	StrBasBdos
 _nulo2:		pop	af			; restore i/o channel mode
 		ld	hl,(PTRFIL)
@@ -506,7 +507,7 @@ _nulo3:		ld	a,e
 		xor	a
 		ld	c,FOPEN			; open file handle
 		call	BdosNF			; execute BDOS function (allow file not found), handle error
-		jr	c,_nulo1		; file not found,
+		jr	c,_nulo1		; file not found
 		jr	_nulo2
 
 _nulo4:		cp	1			; i/o channel mode = sequential input ?
@@ -639,7 +640,7 @@ BAS_FILO:	ld	ix,RETRTN
 		jp	Reg4Return		; restore registers and quit
 
 ; ---------------------------------------------------------
-; Hook NTFL: close i/o channel
+; Hook NTFL: close i/o channel for disk devices
 ; ---------------------------------------------------------
 BAS_NTFL:	ld	ix,RETRTN
 		ld	iy,$0400
@@ -657,7 +658,7 @@ BAS_NTFL:	ld	ix,RETRTN
 		ld	(hl),4			; i/o channel mode = random i/o
 		ld	a,$1A			; EOF
 		call	WriteCharIO		; write character to i/o channel
-		call	nz,FlushIO		; buffer not full, flush i/o channel buffer
+		call	nz,FlushIO		; buffer not full/empty, flush i/o channel buffer
 _ntfl1:		xor	a
 		cp	(hl)			; i/o channel open ?
 		ld	(hl),a			; i/o channel closed
@@ -682,8 +683,8 @@ _ntfl1:		xor	a
 BAS_BINS:	call	TakeControl		; take control from hook caller
 		push	hl
 		ld	ix,SCCPTR
-		call	CallBasic
-		LD	A,0FFH
+		call	CallBasic		; convert linepointers to linenumbers
+		ld	a,$ff
 		call	_loadsave5		; write byte to file handle
 		ld	de,(TXTTAB)
 		ld	hl,(VARTAB)
@@ -799,7 +800,7 @@ _dskio:		push	hl
 		ret
 
 ; ---------------------------------------------------------
-; Hook DGET:
+; Hook DGET: GET/PUT statement
 ; ---------------------------------------------------------
 BAS_DGET:	ld	ix,RETRTN
 		ld	iy,$0400
@@ -884,7 +885,7 @@ _dget3:		call	BasBdos
 		jp	_file9			; restore BASIC pointer and output back to screen
 
 ; ---------------------------------------------------------
-; Hook FIEL: field
+; Hook FIEL: FIELD statement
 ; ---------------------------------------------------------
 BAS_FIEL:	call	TakeControl		; take control from hook caller
 		cp	'#'
@@ -1185,7 +1186,7 @@ _eof1:		push	af
 		ret
 
 ; ---------------------------------------------------------
-; Hook FILE:
+; Hook FILE: list FILES/LFILES statement
 ; ---------------------------------------------------------
 BAS_FILE:	call	TakeControl		; take control from hook caller
 		call	GetChar			; get BASIC character
@@ -2257,7 +2258,8 @@ BdosNF:		call	BDOS
 		jp	BasError		; handle error
 
 ; Subroutine take control from caller (move parameters on stack)
-; Input: IX = return address replacement, IYH = number of bytes to move
+; Input: IX  = return address replacement
+;        IYH = number of bytes to move
 ;
 ; This is what the stack looks like at entry:
 ; prim	exp
@@ -2486,6 +2488,8 @@ ValParFile:	call	CheckChar
 		db	")"
 		ret
 
+; Subroutine evaluate disk file specification
+; Input:  HL = BASIC pointer
 ValFileStr:	ld	ix,FILEVL		; evaluate file expression
 		call	CallBasic
 		ld	a,d
@@ -2644,7 +2648,7 @@ BasMessages:	db	0
 		db	"Directory not found",0
 BASNMSG		equ	15
 
-; Tramslate DOS errors to BASIC errors
+; Translate DOS errors to BASIC errors
 DskBasError:	db	$ba
 		db	$3e		; .NRAMD -> Bad drive name
 		db	$4b		; .RAMDX -> RAM disk already exists

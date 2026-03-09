@@ -27,23 +27,23 @@ endif
 # Note: the rom folder must be an existing folder
 ROM 	:= .$/rom
 
-all:	ppide2 cfide2 jio2
+all:	beer2 soda2 jio2
 
 rdate:
 	@echo db $(QUOTE)$(shell $(GETDATE))$(QUOTE) > rdate.inc
 
-ppide2:	rdate
+beer2:	rdate
 	@echo Assembling CXDOS2 for BEER IDE..
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DCXDOS2 -DPPIDE -Oobj -o=beer_cxdos2.bin $(SOURCE_CS0) $(SOURCE_CS1) $(SOURCE_CSX)
+	z80asm -b -d -l -m -DCXDOS2 -DBEER -Oobj -o=beer_cxdos2.bin $(SOURCE_CS0) $(SOURCE_CS1) $(SOURCE_CSX)
 	z88dk-appmake +glue -b obj/beer_cxdos2 --filler 0xFF --clean
 	z88dk-appmake +rom -b obj/beer_cxdos2__.bin -o $(ROM)/beer_cxdos2.rom -s 32768 --org 0
 	@echo done
 
-cfide2:	rdate
+soda2:	rdate
 	@echo Assembling CXDOS2 for SODA IDE..
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DCXDOS2 -DCFIDE -Oobj -o=soda_cxdos2.bin $(SOURCE_CS0) $(SOURCE_CS1) $(SOURCE_CSX)
+	z80asm -b -d -l -m -DCXDOS2 -DSODA -Oobj -o=soda_cxdos2.bin $(SOURCE_CS0) $(SOURCE_CS1) $(SOURCE_CSX)
 	z88dk-appmake +glue -b obj/soda_cxdos2 --filler 0xFF --clean
 	z88dk-appmake +rom -b obj/soda_cxdos2__.bin -o $(ROM)/soda_cxdos2.rom -s 32768 --org 0
 	@echo done

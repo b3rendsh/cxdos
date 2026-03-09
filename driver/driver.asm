@@ -1,7 +1,7 @@
 ; ------------------------------------------------------------------------------
 ; driver.asm
 ;
-; Copyright (C) 2025 H.J. Berends*
+; Copyright (C) 2026 H.J. Berends*
 ; * Part of the code is based on the BEER-202 driver by SOLiD and other
 ; PPI 8255 and 8-BIT CF IDE solutions publicly shared on the internet.
 ; 
@@ -588,9 +588,9 @@ DRVINIT:	call	ideInit
 		call	ideInfo
 		ret	c
 		call	PrintMsg
-	IFDEF PPIDE
+	IFDEF BEER
 		db	12,"BEER  : PPI IDE "
-	ELIFDEF CFIDE
+	ELIFDEF SODA
 		db	12,"SODA  : CF IDE "
 	ELSE
 		db	12,"CORE  : "
@@ -602,6 +602,9 @@ DRVINIT:	call	ideInit
 	ENDIF
 		db	"Rev.  : "
 		INCLUDE	"rdate.inc"		; Revision date
+	IF BEER && BEER_CS
+		db	" optm"
+	ENDIF
 		db	13,10
 		db	"Master: ",0
 		ld	c,$4d

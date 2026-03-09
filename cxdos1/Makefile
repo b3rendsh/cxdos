@@ -21,31 +21,31 @@ else
 	/	:= /
 endif 
 
-all:	ppide1 cfide1 jio1 pio1
+all:	beer1 soda1 jio1 pio1
 
 rdate:
 	@echo db $(QUOTE)$(shell $(GETDATE))$(QUOTE) > rdate.inc
 
-ppide1:	rdate
+beer1:	rdate
 	@echo Assembling CXDOS1 for BEER IDE..
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DPPIDE -Oobj -o=beer_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DBEER -Oobj -o=beer_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/beer_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/beer_cxdos1__.bin bin$/CXDOS1B.COM
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBASBIN -DPPIDE -Oobj -o=beer_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DBASBIN -DBEER -Oobj -o=beer_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/beer_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/beer_cxdos1__.bin bin$/CXDOS1B.BIN
 	@echo done
 
-cfide1:	rdate
+soda1:	rdate
 	@echo Assembling CXDOS1 for SODA IDE..
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DCFIDE -Oobj -o=soda_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DSODA -Oobj -o=soda_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/soda_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/soda_cxdos1__.bin bin$/CXDOS1C.COM
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBASBIN -DCFIDE -Oobj -o=soda_cxdos1 $(SOURCES1)
+	z80asm -b -d -l -m -DBASBIN -DSODA -Oobj -o=soda_cxdos1 $(SOURCES1)
 	z88dk-appmake +glue -b obj/soda_cxdos1 --filler 0xFF --clean
 	$(CP) obj$/soda_cxdos1__.bin bin$/CXDOS1C.BIN
 	@echo done

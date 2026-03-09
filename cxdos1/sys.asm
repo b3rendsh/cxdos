@@ -2,7 +2,7 @@
 ; sys.asm
 ; CXDOS 1 system module
 ;
-; (C) 2025 All rights reserved.
+; (C) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		INCLUDE	"cxdos1.inc"

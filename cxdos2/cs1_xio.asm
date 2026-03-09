@@ -2,7 +2,7 @@
 ; cs1_xio.asm
 ; System i/o module, replaces msxdos2.sys.
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		SECTION CS1_XIO

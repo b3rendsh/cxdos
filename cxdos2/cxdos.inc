@@ -2,7 +2,7 @@
 ; cxdos.inc
 ; CXDOS / MSX constants and definitions
 ;
-; (c) 2025 All rights reserved.
+; (c) 2026 All rights reserved.
 ; ------------------------------------------------------------------------------
 
 		DEFINE	_CXDOS2_	; prevent double declarations
@@ -18,7 +18,7 @@ RAM64K		equ	$01		; size of RAM is 64K / no ram mapper segment for buffers
 FASTALLOC	equ	$01		; fast alloc for FAT16 (cutoff free disk space calculation)
 DISKBASIC	equ	$01		; Include DISK BASIC
 
-IF CFIDE || PPIDE
+IF SODA || BEER
 	MOD1	equ	'i'	; Ide
 	MOD2	equ	' '	; reserved
 ENDIF
