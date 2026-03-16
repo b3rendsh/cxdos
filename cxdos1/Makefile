@@ -2,6 +2,8 @@
 
 SOURCES1 := main.asm kernel.asm sys.asm
 
+MAKEFLAGS += --no-print-directory
+
 # system agnostic commands
 ifdef ComSpec
 	RMF	:= del /f /q
@@ -21,73 +23,42 @@ else
 	/	:= /
 endif 
 
-all:	beer1 soda1 jio1 pio1
+all:	beer1 soda1 malt1 jio1 pio1 uart1
 
 rdate:
 	@echo db $(QUOTE)$(shell $(GETDATE))$(QUOTE) > rdate.inc
 
-beer1:	rdate
-	@echo Assembling CXDOS1 for BEER IDE..
+# build logic for all interfaces
+cxdos1:	rdate
+	@echo Assembling CXDOS1 for $(INTERFACE)...
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBEER -Oobj -o=beer_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/beer_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/beer_cxdos1__.bin bin$/CXDOS1B.COM
+	z80asm -b -d -l -m $(DEFINES) -Oobj -o=cxdos1 $(SOURCES1)
+	z88dk-appmake +glue -b obj/cxdos1 --filler 0xFF --clean
+	$(CP) obj$/cxdos1__.bin bin$/CXDOS1$(SUFFIX).COM
 	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBASBIN -DBEER -Oobj -o=beer_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/beer_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/beer_cxdos1__.bin bin$/CXDOS1B.BIN
+	z80asm -b -d -l -m -DBASBIN $(DEFINES) -Oobj -o=cxdos1 $(SOURCES1)
+	z88dk-appmake +glue -b obj/cxdos1 --filler 0xFF --clean
+	$(CP) obj$/cxdos1__.bin bin$/CXDOS1$(SUFFIX).BIN
 	@echo done
 
-soda1:	rdate
-	@echo Assembling CXDOS1 for SODA IDE..
-	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DSODA -Oobj -o=soda_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/soda_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/soda_cxdos1__.bin bin$/CXDOS1C.COM
-	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBASBIN -DSODA -Oobj -o=soda_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/soda_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/soda_cxdos1__.bin bin$/CXDOS1C.BIN
-	@echo done
+beer1:
+	@$(MAKE) cxdos1 INTERFACE="BEER IDE" DEFINES=-DBEER SUFFIX=B
 
-jio1:	rdate
-	@echo Assembling CXDOS1 for JIO..
-	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DJIO -Oobj -o=jio_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/jio_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/jio_cxdos1__.bin bin$/CXDOS1A.COM
-	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBASBIN -DJIO -Oobj -o=jio_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/jio_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/jio_cxdos1__.bin bin$/CXDOS1A.BIN
-	@echo done
+soda1:
+	@$(MAKE) cxdos1 INTERFACE="SODA IDE" DEFINES=-DSODA SUFFIX=C
 
-pio1:	rdate
-	@echo Assembling CXDOS1 for JIO LPT..
-	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DJIO -DLPTIO -Oobj -o=pio_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/pio_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/pio_cxdos1__.bin bin$/CXDOS1AP.COM
-	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBASBIN -DJIO -DLPTIO -Oobj -o=pio_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/pio_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/pio_cxdos1__.bin bin$/CXDOS1AP.BIN
-	@echo done
-	
-uart1:	rdate
-	@echo Assembling CXDOS1 for JIO UART..
-	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DJIO -DUART -Oobj -o=uart_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/uart_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/uart_cxdos1__.bin bin$/CXDOS1AU.COM
-	$(RMF) obj$(RMD)
-	z80asm -b -d -l -m -DBASBIN -DJIO -DUART -Oobj -o=uart_cxdos1 $(SOURCES1)
-	z88dk-appmake +glue -b obj/uart_cxdos1 --filler 0xFF --clean
-	$(CP) obj$/uart_cxdos1__.bin bin$/CXDOS1AU.BIN
-	@echo done
-	
-	
+malt1:
+	@$(MAKE) cxdos1 INTERFACE="MALT IDE" DEFINES=-DMALT SUFFIX=D
+
+jio1:
+	@$(MAKE) cxdos1 INTERFACE="JIO" DEFINES=-DJIO SUFFIX=A
+
+pio1:
+	@$(MAKE) cxdos1 INTERFACE="JIO LPT" DEFINES="-DJIO -DLPTIO" SUFFIX=AP
+
+uart1:
+	@$(MAKE) cxdos1 INTERFACE="JIO UART" DEFINES="-DJIO -DUART" SUFFIX=AU
+
 clean:
 	$(RMF) obj$(RMD)
 	$(RMF) rdate.inc
-

@@ -8,4 +8,5 @@ CXDOS1B.BIN	CXDOS 1 with BEER IDE driver BASIC binary
 CXDOS1B.COM	CXDOS 1 with BEER IDE driver MSX-DOS executable
 CXDOS1C.BIN	CXDOS 1 with SODA IDE driver BASIC binary 
 CXDOS1C.COM	CXDOS 1 with SODA IDE driver MSX-DOS executable
-
+CXDOS1D.BIN	CXDOS 1 with MALT IDE driver BASIC binary 
+CXDOS1D.COM	CXDOS 1 with MALT IDE driver MSX-DOS executable

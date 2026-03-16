@@ -97,6 +97,8 @@
 		db	"for SODA interface",CR,LF
 	ELIFDEF	JIO
 		db	"for JIO interface",CR,LF
+	ELIFDEF MALT
+		db	"for MALT interface",CR,LF
 	ENDIF
 	IFDEF DEBUG
 		db	"DEBUG version",CR,LF
@@ -734,7 +736,7 @@ X004E:  	ld	(AFFFF),a
 ; ------------------------------------------------------------------------------
 
 		DEFINE	DRV_IPL
-	IF BEER || SODA
+	IF BEER || SODA || MALT
 		INCLUDE	"../driver/driver.asm"
 	ELIF JIO
 		INCLUDE	"../driver/drv_jio.asm"

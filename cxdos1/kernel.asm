@@ -4433,7 +4433,7 @@ LastEntry:	push	hl
 ; Include ram resident part of disk interface driver
 
 		DEFINE	DRV_SYS
-	IF BEER || SODA
+	IF BEER || SODA || MALT
 		INCLUDE	"../driver/driver.asm"
 		INCLUDE	"../driver/drv_ide.asm"
 	ELIF JIO
