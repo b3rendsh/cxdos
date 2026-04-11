@@ -799,10 +799,12 @@ AF1DD:		dw	0			; F16LOSEC
 AF1DF:		db	0			; F16HISEC
 AF1E0:		dw	0			; reserved for variables
 
-; Subroutine Warm Boot (obsolete)
-AF1E2:	 	jp	WBOOT			; ENDJMP
+; Subroutine Warm Boot (ENDJMP)
+AF1E2:	 	nop				; nop to align with abort vector address
+		nop
+		nop
+		jp	WBOOT			; abort vector at 0xF1E6
 
-AF1E5:		defs	3,0			; reserved for variables
 
 ; Subroutine start handler in DOS memory
 ; Input:  HL = address of pointer

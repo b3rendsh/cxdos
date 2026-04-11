@@ -1259,7 +1259,7 @@ DiskError:	DOSHOOK	H_FATA
 		pop	bc
 		cp	2
 		ret	nz
-		jp	WBOOT			; ENDJMP: warm boot
+		jp	ENDJMP			; warm boot (abort)
 
 ; ---------------------------------------------------------
 ; Function $30 WRABS

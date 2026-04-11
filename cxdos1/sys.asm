@@ -221,6 +221,11 @@ XBDOS_DONE:	push	af
 		or	a			; CP/M function ?
 		jr	z,xbdos7		; z=no, quit
 		pop	af
+		
+		; CP/M compatible functions that have a data wrapper in msxdos.sys result in register b=0
+		; the other CP/M functions don't use b for output. Set b=0 for compatibility with MSX-DOS 1.
+		ld	b,0
+		
 		ld	l,a
 		ld	h,b			; result in hl, CP/M compatible
 		ld	sp,(SPSAVE)

@@ -115,9 +115,9 @@ SNSMAT	 	equ     $0141		; Get specified line of the keyboard matrix (machine/reg
 DATABA		equ	$F1C9		; Start of disk system static work area
 SPRTBUF		equ	$F1C9		; BDOS function $09 STROUT
 BLKMOV		equ	$F1D9		; move block (obsolete)
+ENDJMP		equ	$F1E2		; warm boot / abort handler
 JPHL		equ	$F1E8		; start handler in DOS memory
 LODNAM		equ	$F1F4		; validate FCB filename
-ENDJMP		equ	$F1E2		; warm boot (obsolete)
 IONAME		equ	$F1F7		; device name table
 DEVDIR		equ	$F20B		; directory entry structure for devices
 MONTAB		equ	$F22B		; month table
