@@ -631,9 +631,9 @@ SslotCode:	out	($a8),a			; SSLOT
 SslotSize:	equ	$-SslotCode
 
 	IFDEF DEBUG
-Signon:		db	"CXDOS version 2.00",MOD1,MOD2," (TEST)",CR,LF,LF,0
+Signon:		db	"CXDOS version 2.20",MOD1,MOD2," (TEST)",CR,LF,LF,0
 	ELSE
-Signon:		db	"CXDOS version 2.00",MOD1,MOD2,CR,LF,LF,0
+Signon:		db	"CXDOS version 2.20",MOD1,MOD2,CR,LF,LF,0
 	ENDIF
 AutoBasYes:	db	"RUN\"\\AUTOEXEC.BAS"
 AutoBasNo:	db	0

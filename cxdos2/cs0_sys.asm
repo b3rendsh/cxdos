@@ -236,7 +236,7 @@ EnaCS1:		push	af
 		pop	af
 		ret
 
-TxtVersion: 	db	"CXDOS kernel version 2.00",MOD1,MOD2,0
+TxtVersion: 	db	"CXDOS kernel version 2.20",MOD1,MOD2,0
 
 ; ---------------------------------------------------------
 ; *** BDOS handler ***

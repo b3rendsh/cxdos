@@ -12,7 +12,7 @@
 
 ; Settings
 DEBUG		equ	$01		; Include debug information / integrity checks
-CXDOSVER	equ	$20		; DOS version (should be between $20 and $22)
+CXDOSVER	equ	$22		; DOS version (should be between $20 and $22)
 ROM32K		equ	$01		; size of ROM is 32K / no rom mapper
 RAM64K		equ	$01		; size of RAM is 64K / no ram mapper segment for buffers
 FASTALLOC	equ	$01		; fast alloc for FAT16 (cutoff free disk space calculation)

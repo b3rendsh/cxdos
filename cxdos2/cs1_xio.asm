@@ -57,9 +57,9 @@ CommandM:	db	"A:\\COMMAND2.COM",0
 
 ; short version info (signon message is moved to ipl module)
 	IFDEF DEBUG
-VerTxt:		db	"CXDOS version 2.00",MOD1,MOD2," (TEST)",0
+VerTxt:		db	"CXDOS version 2.20",MOD1,MOD2," (TEST)",0
 	ELSE
-VerTxt:		db	"CXDOS version 2.00",MOD1,MOD2,0
+VerTxt:		db	"CXDOS version 2.20",MOD1,MOD2,0
 	ENDIF
 
 		defs	XIOBASE+$100-$,0	; space for stack (at least 128 bytes)
