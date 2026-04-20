@@ -18,7 +18,7 @@ RAM64K		equ	$01		; size of RAM is 64K / no ram mapper segment for buffers
 FASTALLOC	equ	$01		; fast alloc for FAT16 (cutoff free disk space calculation)
 DISKBASIC	equ	$01		; Include DISK BASIC
 
-IF SODA || BEER
+IF SODA || BEER || MALT
 	MOD1	equ	'i'	; Ide
 	MOD2	equ	' '	; reserved
 ENDIF

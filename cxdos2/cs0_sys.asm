@@ -1108,7 +1108,7 @@ sysFarDos:	push	iy
 
 		SECTION CS0_DRV
 		DEFINE	DRV_SYS
-	IF BEER || SODA
+	IF BEER || SODA || MALT
 		INCLUDE	"../driver/driver.asm"
 		INCLUDE	"../driver/drv_ide.asm"
 	ELIF JIO

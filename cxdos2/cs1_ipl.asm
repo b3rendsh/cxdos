@@ -60,10 +60,7 @@
 		EXTERN	DRIVES
 		EXTERN	INIENV
 		EXTERN	MYSIZE
-	IF BEER || SODA
 		EXTERN	BOOTMENU
-	ENDIF
-
 
 ; ------------------------------------------------------------------------------
 ; *** CXDOS initial program load ***
@@ -474,7 +471,7 @@ r008:		call	DisableDosP1		; disable DOS page 1 support
 		call    GetBootLoader		; search for first drive with valid boot loader
 		call	nz,StartBootLdr		; nz=found, execute boot loader with Cx=0
 
-	IF BEER || SODA
+	IFDEF BOOTCHOICE
 		call	BOOTMENU		; boot menu which sets current drive
 		jp	c,iplDiskBasic		; if c-flag is set then start DiskBASIC
 	ELSE
@@ -486,10 +483,7 @@ r008:		call	DisableDosP1		; disable DOS page 1 support
 StartBootLdr:	ld	hl,DISKVE		; address BDOS diskerror handler pointer
 		ld	de,SDOSON		; enable DOS kernel subroutine
 		ld	a,(NOTFIR)		; cold boot flag
-		call    $0c01e			; start boot loader (if it returns then continue with ipl cxdos )
-		call	UpdateDosP1
-		scf
-		jp	$0c01e
+		jp	$0c01e			; start boot loader (if it returns then continue with ipl cxdos)
 
 
 ; ------------------------------------------------------------------------------

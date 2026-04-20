@@ -22,7 +22,7 @@ Enhancements
   execution of DOS functions.
 + If used on MSX2 all RAM mapper segments are available for the user application.
   I.e. on a machine with 128K RAM, 64K RAM (4 segments) will be free.
-+ Includes BEER, SODA or JIO driver.
++ Includes BEER, MALT, SODA or JIO driver.
 
 
 Limitations

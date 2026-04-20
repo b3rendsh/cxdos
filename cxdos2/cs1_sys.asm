@@ -360,7 +360,7 @@ sysPrintCRLF:	ld	a,CR
 
 		SECTION CS1_DRV
 		DEFINE	DRV_IPL
-	IF BEER || SODA
+	IF BEER || SODA || MALT
 		INCLUDE	"../driver/driver.asm"
 	ELIF JIO
 		INCLUDE	"../driver/drv_jio.asm"
